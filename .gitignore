@@ -26,3 +26,13 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Vite/Rollup specific
+stats.html
+
+# Testing
+coverage/
+
+# Misc
+.eslintcache
+.stylelintcache

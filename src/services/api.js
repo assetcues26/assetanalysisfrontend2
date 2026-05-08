@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://ai-audit-backend-dmui.onrender.com';
 
 export const submitAuditSession = async (sessionId, pairs) => {
   const formData = new FormData();

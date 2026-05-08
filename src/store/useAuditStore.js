@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { get, set as idbSet, del } from 'idb-keyval';
+import { submitAuditSession } from '../services/api';
 
 // Custom storage engine for IndexedDB using idb-keyval
 const idbStorage = {
@@ -116,7 +117,7 @@ const useAuditStore = create(
 
       submitSession: async () => {
         const state = useAuditStore.getState();
-        
+
         // Offline check
         if (!navigator.onLine) {
           state.setNotification({ 
@@ -130,38 +131,7 @@ const useAuditStore = create(
         set({ sessionState: 'PROCESSING' });
 
         try {
-          const formData = new FormData();
-          const sessionMetadata = {
-            session_id: state.sessionId || crypto.randomUUID(),
-            pairs_metadata: state.pairs.map((p, idx) => ({
-              pair_index: idx,
-              barcode_skipped: p.barcode_skipped
-            }))
-          };
-
-          formData.append('session_metadata', JSON.stringify(sessionMetadata));
-
-          // Collect all images
-          for (let i = 0; i < state.pairs.length; i++) {
-            const pair = state.pairs[i];
-            
-            const assetFile = await fetch(pair.asset).then(r => r.blob()).then(blob => new File([blob], `asset_${i}.jpg`, { type: 'image/jpeg' }));
-            formData.append('images', assetFile);
-
-            if (!pair.barcode_skipped && pair.barcode) {
-              const barcodeFile = await fetch(pair.barcode).then(r => r.blob()).then(blob => new File([blob], `barcode_${i}.jpg`, { type: 'image/jpeg' }));
-              formData.append('images', barcodeFile);
-            }
-          }
-
-          const response = await fetch('http://localhost:8000/api/v1/audit/session', {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (!response.ok) throw new Error('Submission failed');
-          
-          const results = await response.json();
+          const results = await submitAuditSession(state.sessionId || crypto.randomUUID(), state.pairs);
           useAuditStore.getState().setResults(results);
         } catch (error) {
           console.error('Audit failed:', error);
