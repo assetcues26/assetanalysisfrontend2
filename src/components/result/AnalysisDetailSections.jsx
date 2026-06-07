@@ -23,6 +23,8 @@ import {
   humanizeValidationWarning,
 } from '../../utils/humanizeLabels';
 import { tagReadableGridValue } from '../../utils/tagReadability';
+import { getValuationBullets } from '../../utils/valuationBullets';
+import { ValuationBulletList } from './ValuationBulletList';
 import {
   CollapsiblePanel,
   DamageCard,
@@ -124,10 +126,13 @@ function ValuationPanel({ valuation, erpVerification }) {
             </p>
           )}
 
-          {erpVerification?.climate_valuation_note && (
-            <div className="rounded-xl border border-sky-200 bg-sky-50/80 px-4 py-3 text-sm leading-relaxed text-sky-950">
+          {getValuationBullets(erpVerification, 'climate_valuation').length > 0 && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50/80 px-4 py-3 text-sm text-sky-950">
               <p className="font-semibold text-sky-900">Location & climate impact on current estimate</p>
-              <p className="mt-1.5">{erpVerification.climate_valuation_note}</p>
+              <ValuationBulletList
+                className="mt-2 text-sky-950"
+                bullets={getValuationBullets(erpVerification, 'climate_valuation')}
+              />
             </div>
           )}
 
@@ -432,10 +437,17 @@ function ErpVerificationPanel({ erpVerification }) {
           ['Functional appearance', erpVerification.functional_appearance],
           ['Location', erpVerification.location],
           ['Climate profile', erpVerification.location_profile],
-          ['NBV vs market', erpVerification.nbv_vs_market_note],
-          ['Climate valuation note', erpVerification.climate_valuation_note],
         ]}
       />
+
+      {getValuationBullets(erpVerification, 'nbv_vs_market').length > 0 && (
+        <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+            NBV vs market
+          </p>
+          <ValuationBulletList bullets={getValuationBullets(erpVerification, 'nbv_vs_market')} />
+        </div>
+      )}
 
       {warnings.length > 0 && (
         <ul className="mt-4 space-y-2 rounded-xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-900">

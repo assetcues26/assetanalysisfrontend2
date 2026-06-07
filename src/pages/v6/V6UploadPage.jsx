@@ -63,10 +63,11 @@ export function V6UploadPage() {
             </p>
           </header>
 
-          <div className="mb-6">
+          <div className="mb-4">
             <AngleChecklistCard
               category={editedContext.category}
               subcategory={editedContext.subcategory}
+              compact
             />
           </div>
 

@@ -92,11 +92,13 @@ export function V6CapturePage() {
           onRetry={camera.retry}
           className="min-h-[min(55dvh,520px)] flex-1 sm:min-h-[min(65dvh,640px)]"
         />
-        <div className="mt-3 px-1">
+        <div className="mt-2 px-1">
           <AngleChecklistCard
             category={editedContext.category}
             subcategory={editedContext.subcategory}
             theme="dark"
+            compact
+            defaultCollapsed
           />
         </div>
         <p className="mt-2 px-1 text-center text-xs text-gray-400">
