@@ -9,7 +9,9 @@ import { enrichAssetAgeFields } from '../../utils/assetAgeFields';
 import { ScanImageGallery } from './ScanImageGallery';
 import { HighlightMetric, InfoGrid, ProseBlock, ResultPanel } from './ResultLayout';
 import {
+  bookNbvSublabel,
   formatAgeYearsMonths,
+  formatBookNbvDisplay,
   formatInrMoneyRange,
   normalizeCondition,
 } from '../../utils/formatters';
@@ -86,6 +88,13 @@ export function AssetResultCard({
   const modelYearSummary = asset?.estimated_model_years;
   const valuationRange = formatInrMoneyRange(result.valuation?.as_is?.inr);
   const hasValuation = valuationRange !== '—';
+  const bookNbvDisplay = formatBookNbvDisplay(
+    result.valuation,
+    result.erp_verification,
+    result.erpContext,
+  );
+  const hasBookNbv = bookNbvDisplay !== '—';
+  const isErpBookNbv = result.valuation?.nbv?.method === 'erp_book_nbv';
   const conditionLabel = normalizeCondition(result.condition);
   const rawTag =
     result.detected_tag_number_raw && result.detected_tag_number_raw !== '—'
@@ -182,7 +191,9 @@ export function AssetResultCard({
       />
 
       <div className="space-y-6 px-6 py-6 sm:px-8">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div
+          className={`grid gap-3 sm:grid-cols-2 ${isErpBookNbv && hasBookNbv ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+        >
           <HighlightMetric
             label="Condition"
             value={conditionLabel}
@@ -192,9 +203,17 @@ export function AssetResultCard({
           <HighlightMetric
             label="Current estimate"
             value={hasValuation ? valuationRange : 'Pending'}
-            hint={hasValuation ? 'India market (₹)' : 'Run fresh analysis'}
+            hint={hasValuation ? 'Damage-adjusted market (₹)' : 'Run fresh analysis'}
             variant={hasValuation ? 'primary' : 'muted'}
           />
+          {isErpBookNbv && hasBookNbv && (
+            <HighlightMetric
+              label="Book NBV"
+              value={bookNbvDisplay}
+              hint={bookNbvSublabel(result.valuation)}
+              variant="default"
+            />
+          )}
           <HighlightMetric
             label={erpVerify ? 'Tag match' : 'Asset tag'}
             value={

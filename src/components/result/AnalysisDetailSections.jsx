@@ -11,6 +11,9 @@ import {
   formatAgeYearsMonths,
   formatConfidence,
   formatList,
+  bookNbvSublabel,
+  formatBookNbvDisplay,
+  formatInrAmount,
   formatInrMoneyRange,
 } from '../../utils/formatters';
 import { formatPlacement, formatStickerType } from '../../utils/placementFormatters';
@@ -59,7 +62,7 @@ function hasMoneyRange(range) {
   return range?.min != null || range?.max != null;
 }
 
-function ValuationPanel({ valuation, erpVerification }) {
+function ValuationPanel({ valuation, erpVerification, erpContext }) {
   if (!valuation) return null;
 
   const hasAmounts =
@@ -94,10 +97,10 @@ function ValuationPanel({ valuation, erpVerification }) {
             />
             <MoneyHighlight
               label="Book value (NBV)"
-              sublabel="Age depreciation only"
+              sublabel={bookNbvSublabel(valuation)}
               value={
                 valuation.nbv
-                  ? formatInrMoneyRange(valuation.nbv.inr)
+                  ? formatBookNbvDisplay(valuation, erpVerification, erpContext)
                   : 'Unavailable'
               }
               variant="muted"
@@ -448,6 +451,12 @@ function ErpVerificationPanel({ erpVerification }) {
               : yesNo(erpVerification.rust_corrosion_noted),
           ],
           ['Functional appearance', erpVerification.functional_appearance],
+          [
+            'Book NBV (ERP input)',
+            erpVerification.erp_book_nbv_inr != null
+              ? formatInrAmount(erpVerification.erp_book_nbv_inr)
+              : null,
+          ],
           ['Location', erpVerification.location],
           ['Climate profile', erpVerification.location_profile],
         ]}
@@ -621,7 +630,11 @@ export function AnalysisDetailSections({ result }) {
   return (
     <div className="space-y-6">
       <ErpVerificationPanel erpVerification={erpVerification} />
-      <ValuationPanel valuation={valuation} erpVerification={erpVerification} />
+      <ValuationPanel
+        valuation={valuation}
+        erpVerification={erpVerification}
+        erpContext={result.erpContext}
+      />
       <AssetProfilePanel asset={asset} />
       <ConditionPanel condition={condition} />
       <TrackingPanel result={result} identifiers={identifiers} />

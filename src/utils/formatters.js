@@ -88,6 +88,44 @@ export function formatInrMoneyRange(range) {
   return formatMoneyRange(range, '₹');
 }
 
+/**
+ * Single INR amount (e.g. exact ERP book NBV).
+ * @param {number | null | undefined} value
+ */
+export function formatInrAmount(value) {
+  if (value == null || Number.isNaN(Number(value))) return '—';
+  return `₹${Number(value).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
+}
+
+/**
+ * Book NBV display — exact ERP value when available, otherwise valuation range.
+ * @param {object | null | undefined} valuation
+ * @param {object | null | undefined} erpVerification
+ * @param {object | null | undefined} erpContext
+ */
+export function formatBookNbvDisplay(valuation, erpVerification, erpContext) {
+  const exact =
+    erpVerification?.erp_book_nbv_inr ??
+    erpContext?.book_nbv_inr ??
+    (valuation?.nbv?.method === 'erp_book_nbv' &&
+    valuation?.nbv?.inr?.min != null &&
+    valuation.nbv.inr.min === valuation.nbv.inr.max
+      ? valuation.nbv.inr.min
+      : null);
+  if (valuation?.nbv?.method === 'erp_book_nbv' && exact != null) {
+    return formatInrAmount(exact);
+  }
+  return formatInrMoneyRange(valuation?.nbv?.inr);
+}
+
+/** @param {object | null | undefined} valuation */
+export function bookNbvSublabel(valuation) {
+  if (valuation?.nbv?.method === 'erp_book_nbv') {
+    return 'Book NBV from ERP (on books)';
+  }
+  return 'Age depreciation only';
+}
+
 export function formatList(items) {
   if (!items?.length) return '—';
   return items.join(', ');
