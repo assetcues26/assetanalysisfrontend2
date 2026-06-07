@@ -43,6 +43,12 @@ export function FarRegisterSummary({ asset }) {
         />
         <Row label="Status" value={asset.asset_status} />
       </div>
+      {asset.far_price_basis && (
+        <p className="mt-3 text-xs leading-relaxed text-slate-600">
+          <span className="font-semibold text-slate-700">Price basis: </span>
+          {asset.far_price_basis}
+        </p>
+      )}
     </div>
   );
 }
