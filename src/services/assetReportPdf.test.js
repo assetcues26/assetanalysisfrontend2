@@ -31,7 +31,16 @@ vi.mock('jspdf', () => ({
   })),
 }));
 
-import { exportAssetReportPdf } from './assetReportPdf';
+import { exportAssetReportPdf, pdfSafeText } from './assetReportPdf';
+
+describe('pdfSafeText', () => {
+  it('replaces rupee symbol and en-dash for Latin-1 PDF fonts', () => {
+    const out = pdfSafeText('Current (₹18,444 – ₹19,912) — note');
+    expect(out).toBe('Current (Rs. 18,444 - Rs. 19,912) - note');
+    expect(out).not.toMatch(/₹/);
+    expect(out).not.toMatch(/\u2013|\u2014/);
+  });
+});
 
 describe('exportAssetReportPdf', () => {
   beforeEach(() => {

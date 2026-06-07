@@ -2,10 +2,11 @@ import { jsPDF } from 'jspdf';
 import companyLogoUrl from '../assets/AssetCues-Logo 1.png';
 import { UPLOAD_PROCESSING_MODES } from '../constants/uploadMode';
 import {
+  formatBookNbvDisplay,
   formatConfidence,
   formatDateTime,
   formatList,
-  formatInrMoneyRange,
+  formatMoneyRange,
 } from '../utils/formatters';
 import { buildAssetReportUrl } from '../utils/reportUrl';
 import { formatPlacement, formatStickerType } from '../utils/placementFormatters';
@@ -29,6 +30,25 @@ function truncateText(text, max = MAX_VALUE_CHARS) {
   const s = String(text ?? '');
   if (s.length <= max) return s;
   return `${s.slice(0, max).trimEnd()}…`;
+}
+
+/** jsPDF Helvetica is Latin-1 only — strip/replace Unicode that garbles output. */
+export function pdfSafeText(text) {
+  return String(text ?? '')
+    .replace(/\u20b9/g, 'Rs. ')
+    .replace(/[\u2013\u2014\u2212]/g, '-')
+    .replace(/\u00b7/g, ' - ')
+    .replace(/\u2026/g, '...')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201c\u201d]/g, '"')
+    .replace(/\u00a0/g, ' ')
+    .replace(/[^\t\n\r\x20-\x7e]/g, '');
+}
+
+function formatPdfInrMoneyRange(range) {
+  const raw = formatMoneyRange(range, 'Rs. ');
+  if (raw === '—') return null;
+  return pdfSafeText(raw);
 }
 
 function loadImage(src) {
@@ -150,8 +170,8 @@ function buildFieldSections(entry) {
       title: 'Asset details',
       fields: [
         ['Brand / model', [asset.brand, asset.model].filter(Boolean).join(' ') || null],
-        ['Category', [asset.category, asset.type].filter(Boolean).join(' · ') || null],
-        ['Color / material', [asset.color, asset.material].filter(Boolean).join(' · ') || null],
+        ['Category', [asset.category, asset.type].filter(Boolean).join(' - ') || null],
+        ['Color / material', [asset.color, asset.material].filter(Boolean).join(' - ') || null],
         ['Dimensions', asset.estimated_dimensions],
         ['Serial', asset.serial_number],
         ['Specs', formatList(asset.specifications)],
@@ -184,8 +204,15 @@ function buildFieldSections(entry) {
     {
       title: 'Valuation',
       fields: [
-        ['Current Estimate Value (₹)', formatInrMoneyRange(valuation.as_is?.inr)],
-        ['NBV (₹)', formatInrMoneyRange(valuation.nbv?.inr)],
+        ['Current estimate (Rs.)', formatPdfInrMoneyRange(valuation.as_is?.inr)],
+        [
+          'Book NBV (Rs.)',
+          formatPdfInrMoneyRange(valuation.nbv?.inr) !== '—'
+            ? pdfSafeText(
+                formatBookNbvDisplay(valuation, entry.erp_verification, entry.erpContext),
+              )
+            : null,
+        ],
         [
           'NBV exceeds current estimate',
           valuation.nbv_exceeds_as_is == null
@@ -195,7 +222,7 @@ function buildFieldSections(entry) {
               : 'No',
         ],
         ['NBV vs current estimate note', valuation.nbv_vs_as_is_note],
-        ['Like-new reference (₹)', formatInrMoneyRange(valuation.like_new_reference?.inr)],
+        ['Like-new reference (Rs.)', formatPdfInrMoneyRange(valuation.like_new_reference?.inr)],
         ['Confidence', valuation.confidence != null ? formatConfidence(valuation.confidence) : null],
       ],
     },
@@ -205,7 +232,7 @@ function buildFieldSections(entry) {
     sections.push({
       title: 'Damage',
       fields: condition.damage_items.slice(0, 5).flatMap((item, i) => [
-        [`#${i + 1}`, [item.type, item.severity, item.location].filter(Boolean).join(' · ')],
+        [`#${i + 1}`, [item.type, item.severity, item.location].filter(Boolean).join(' - ')],
         [`#${i + 1} detail`, item.detail],
         [`#${i + 1} placement`, formatPlacement(item.placement)],
         [
@@ -235,14 +262,14 @@ function buildFieldSections(entry) {
     .map((section) => ({
       ...section,
       fields: section.fields
-        .map(([label, value]) => [label, truncateText(value)])
+        .map(([label, value]) => [label, truncateText(pdfSafeText(value))])
         .filter(([, v]) => v != null && v !== '' && v !== '—'),
     }))
     .filter((s) => s.fields.length > 0);
 }
 
 function wrapText(doc, text, maxWidth) {
-  return doc.splitTextToSize(String(text), maxWidth);
+  return doc.splitTextToSize(pdfSafeText(text), maxWidth);
 }
 
 function gridColumns(count) {
@@ -323,7 +350,7 @@ async function drawImagesGrid(doc, imageItems, startY) {
 function drawPageFooter(doc, pageNum) {
   doc.setFontSize(7);
   doc.setTextColor(140, 140, 140);
-  doc.text('AssetCues · Asset Intelligence Report', MARGIN, FOOTER_Y);
+  doc.text('AssetCues - Asset Intelligence Report', MARGIN, FOOTER_Y);
   doc.text(`Page ${pageNum}`, PAGE_WIDTH - MARGIN, FOOTER_Y, { align: 'right' });
   doc.setTextColor(30, 30, 30);
 }
@@ -405,7 +432,7 @@ export async function exportAssetReportPdf(entry) {
   doc.setFontSize(8);
   doc.setTextColor(71, 85, 105);
   doc.text(
-    `Condition: ${entry.condition || '—'}  ·  Tag: ${entry.detected_tag_number_raw || '—'}`,
+    `Condition: ${entry.condition || '-'}  |  Tag: ${entry.detected_tag_number_raw || '-'}`,
     MARGIN,
     y,
   );
