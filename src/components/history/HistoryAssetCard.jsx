@@ -1,0 +1,229 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronUp, ExternalLink, FileDown, Package, Trash } from 'lucide-react';
+import { exportAssetReportPdf } from '../../services/assetReportPdf';
+import { useApp } from '../../context/AppContext';
+import { Button } from '@/components/ui/button';
+import { CardBody, CardContainer, CardItem } from '@/components/ui/3d-card-effect';
+import { ConditionBadge } from '../ui/ConditionBadge';
+import { LabelChip } from '../ui/LabelChip';
+import { ConfirmModal } from '../ui/Modal';
+import { formatRelativeTime } from '../../utils/formatters';
+import {
+  getHistoryCardImageUrl,
+  hasHistoryCardImage,
+} from './historyCardImages';
+import { AnalysisDetailSections } from '../result/AnalysisDetailSections';
+import { ScanImageGallery } from '../result/ScanImageGallery';
+
+export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, index = 0 }) {
+  const navigate = useNavigate();
+  const { showToast } = useApp();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [imgSrc, setImgSrc] = useState(() => getHistoryCardImageUrl(entry));
+  const hasStoredImages = hasHistoryCardImage(entry);
+
+  const handleDelete = (e) => {
+    e.stopPropagation();
+    setConfirmOpen(true);
+  };
+
+  const toggle = () => onToggleExpand(expanded ? null : entry.id);
+
+  return (
+    <motion.article
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: index * 0.06 }}
+      className={`w-full min-w-0 max-w-full ${expanded ? 'max-w-4xl' : ''} justify-self-stretch`}
+    >
+      <CardContainer
+        enableTilt={!expanded}
+        containerClassName="py-0"
+        className="w-full"
+      >
+        <CardBody className="group/card relative w-full overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-4 shadow-xl transition-shadow hover:shadow-2xl hover:shadow-blue-500/10 sm:p-5">
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={handleDelete}
+            aria-label="Delete asset"
+            className="absolute right-4 top-4 z-50 min-h-11 touch-manipulation border-0 bg-red-600 px-3 text-white shadow-lg hover:bg-red-700 focus-visible:bg-red-700 sm:right-5 sm:top-5"
+          >
+            <Trash className="-ms-1 me-1.5 shrink-0" size={16} strokeWidth={2} aria-hidden />
+            Delete
+          </Button>
+
+          <CardItem translateZ={50} className="w-full pr-24 text-neutral-800">
+            <ConditionBadge condition={entry.condition} />
+            <h3 className="mt-2 truncate text-lg font-bold sm:text-xl">{entry.asset_name}</h3>
+            <p className="mt-1 truncate font-mono text-xs text-neutral-500">
+              {entry.detected_tag_number_raw}
+            </p>
+            <p className="mt-0.5 text-xs text-neutral-400">
+              {formatRelativeTime(entry.processedAt)}
+            </p>
+          </CardItem>
+
+          <CardItem translateZ={80} className="relative z-10 mt-4 w-full">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-gray-100 sm:aspect-[16/10]">
+              {imgSrc ? (
+                <img
+                  src={imgSrc}
+                  alt={entry.asset_name}
+                  className="h-full w-full object-cover transition-shadow group-hover/card:shadow-lg"
+                  onError={() => setImgSrc(null)}
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-gray-400">
+                  <Package size={40} aria-hidden />
+                  <span className="text-xs text-gray-500">No preview image</span>
+                </div>
+              )}
+            </div>
+          </CardItem>
+
+          <CardItem translateZ={30} className="mt-4 w-full">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={toggle}
+              aria-expanded={expanded}
+              className="min-h-12 w-full touch-manipulation border-0 bg-red-600 text-base font-semibold text-white shadow-sm hover:bg-red-700 focus-visible:bg-red-700 sm:min-h-11 sm:text-sm"
+            >
+              {expanded ? (
+                <>
+                  <ChevronUp className="me-2 shrink-0" size={18} aria-hidden />
+                  Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="me-2 shrink-0" size={18} aria-hidden />
+                  View details
+                </>
+              )}
+            </Button>
+          </CardItem>
+        </CardBody>
+      </CardContainer>
+
+      <AnimatePresence initial={false}>
+        {expanded && (
+          <motion.div
+            key="details"
+            initial={{ height: 0, opacity: 0, marginTop: 0 }}
+            animate={{ height: 'auto', opacity: 1, marginTop: 12 }}
+            exit={{ height: 0, opacity: 0, marginTop: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg"
+          >
+            <div className="space-y-5 p-4 sm:p-6">
+              {hasStoredImages && (
+                <div className="-mx-2 overflow-hidden rounded-xl border border-gray-100">
+                  <ScanImageGallery
+                    mergedImageUrl={entry.mergedImageUrl}
+                    previewUrls={entry.previewUrls || []}
+                    processingMode={entry.processingMode}
+                    analysisMethod={entry.analysis_method}
+                  />
+                </div>
+              )}
+              <DetailRow label="Asset condition">
+                {entry.asset_condition || '—'}
+              </DetailRow>
+              <DetailRow label="Description">
+                {entry.asset_description || '—'}
+              </DetailRow>
+              <DetailRow label="Tag detection">
+                {entry.tag_detection_reasoning || '—'}
+              </DetailRow>
+              <DetailRow label="Barcode position">
+                {entry.barcodeposition || '—'}
+              </DetailRow>
+              {entry.visible_labels?.length > 0 && (
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-gray-800">Visible labels</p>
+                  <div className="flex flex-wrap gap-2">
+                    {entry.visible_labels.map((label) => (
+                      <LabelChip key={label} label={label} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              <DetailRow label="Image readability">
+                {entry.image_readability || '—'}
+              </DetailRow>
+              <AnalysisDetailSections result={entry} />
+              {!hasStoredImages && (
+                <p className="flex items-center gap-2 text-sm text-gray-500">
+                  <Package size={16} aria-hidden />
+                  No preview image stored for this scan
+                </p>
+              )}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => navigate(`/result/${entry.id}`)}
+                >
+                  <ExternalLink className="me-2 shrink-0" size={16} aria-hidden />
+                  Open full report
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  disabled={exportingPdf}
+                  onClick={async () => {
+                    setExportingPdf(true);
+                    try {
+                      await exportAssetReportPdf(entry);
+                      showToast('PDF report downloaded', 'success');
+                    } catch (err) {
+                      showToast(err?.message || 'Could not generate PDF', 'error');
+                    } finally {
+                      setExportingPdf(false);
+                    }
+                  }}
+                >
+                  <FileDown className="me-2 shrink-0" size={16} aria-hidden />
+                  {exportingPdf ? 'Generating…' : 'Download PDF'}
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ConfirmModal
+        open={confirmOpen}
+        title="Delete asset?"
+        description={`Remove "${entry.asset_name}" from your history? This cannot be undone.`}
+        confirmLabel="Delete"
+        onConfirm={() => {
+          onDelete(entry.id);
+          setConfirmOpen(false);
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </motion.article>
+  );
+}
+
+function DetailRow({ label, children, mono = false }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
+      <p
+        className={`mt-1 break-words text-sm leading-relaxed text-gray-800 ${mono ? 'font-mono text-xs' : ''}`}
+      >
+        {children}
+      </p>
+    </div>
+  );
+}

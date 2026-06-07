@@ -1,0 +1,53 @@
+import { UPLOAD_PROCESSING_MODES } from '../constants/uploadMode';
+import { forkBlobUrl } from '../utils/blobUrls';
+import {
+  extractUploadedImagesFromApi,
+  mapAnalysisResponse,
+} from '../utils/mapAnalysisResponse';
+import { analyzeAssetsOnServer, resolveAnalysisEndpoint } from './assetAnalysisApi';
+import { compressImage } from '../utils/imageCompression';
+
+/**
+ * @param {Array<{ id: string, file?: File, previewUrl: string, name?: string }>} images
+ * @param {{ processingMode?: import('../constants/uploadMode').UploadProcessingMode, locale?: string }} [options]
+ * @returns {Promise<object>}
+ */
+export async function analyzeImages(images, options = {}) {
+  if (!images?.length) {
+    throw new Error('No images provided for analysis');
+  }
+
+  const processingMode = options.processingMode ?? UPLOAD_PROCESSING_MODES.COLLAGE;
+  const apiRoute = resolveAnalysisEndpoint(processingMode);
+
+  const withFiles = images.filter((img) => img.file instanceof File);
+  if (withFiles.length !== images.length) {
+    throw new Error(
+      `${images.length - withFiles.length} image(s) are missing file data — re-add from capture or upload`,
+    );
+  }
+
+  const compressedFiles = await Promise.all(
+    withFiles.map(async (img) => ({
+      ...img,
+      file: await compressImage(img.file),
+    }))
+  );
+
+  const apiResponse = await analyzeAssetsOnServer(compressedFiles, processingMode, {
+    locale: options.locale,
+  });
+
+  let fallbackPreviewUrls = [];
+  if (extractUploadedImagesFromApi(apiResponse).length === 0) {
+    fallbackPreviewUrls = await Promise.all(
+      images.map((img) => forkBlobUrl(img.previewUrl)),
+    );
+  }
+
+  return mapAnalysisResponse(apiResponse, {
+    fallbackPreviewUrls,
+    processingMode,
+    apiRoute,
+  });
+}
