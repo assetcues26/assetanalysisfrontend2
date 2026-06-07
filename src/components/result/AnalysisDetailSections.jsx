@@ -23,7 +23,7 @@ import {
   humanizeValidationWarning,
 } from '../../utils/humanizeLabels';
 import { tagReadableGridValue } from '../../utils/tagReadability';
-import { getValuationBullets } from '../../utils/valuationBullets';
+import { getValuationBullets, normalizeErpVerification } from '../../utils/valuationBullets';
 import { ValuationBulletList } from './ValuationBulletList';
 import {
   CollapsiblePanel,
@@ -371,8 +371,21 @@ function PhotoCoverageBar({ score, angles }) {
   );
 }
 
+function ValuationInsightsBlock({ title, bullets }) {
+  if (!bullets?.length) return null;
+  return (
+    <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{title}</p>
+      <ValuationBulletList bullets={bullets} />
+    </div>
+  );
+}
+
 function ErpVerificationPanel({ erpVerification }) {
   if (!erpVerification) return null;
+
+  const nbvBullets = getValuationBullets(erpVerification, 'nbv_vs_market');
+  const climateBullets = getValuationBullets(erpVerification, 'climate_valuation');
 
   const yesNo = (value) => {
     if (value === true) return 'Yes';
@@ -440,14 +453,8 @@ function ErpVerificationPanel({ erpVerification }) {
         ]}
       />
 
-      {getValuationBullets(erpVerification, 'nbv_vs_market').length > 0 && (
-        <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
-            NBV vs market
-          </p>
-          <ValuationBulletList bullets={getValuationBullets(erpVerification, 'nbv_vs_market')} />
-        </div>
-      )}
+      <ValuationInsightsBlock title="NBV vs market" bullets={nbvBullets} />
+      <ValuationInsightsBlock title="Climate valuation note" bullets={climateBullets} />
 
       {warnings.length > 0 && (
         <ul className="mt-4 space-y-2 rounded-xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-900">
@@ -604,14 +611,17 @@ export function AnalysisDetailSections({ result }) {
   const condition = result.conditionDetail;
   const valuation = result.valuation;
   const identifiers = result.identifiers;
+  const erpVerification = normalizeErpVerification(
+    result.erp_verification ?? result.apiResponse?.demo_verification,
+  );
   const hasApiShape = Boolean(asset || condition || valuation);
 
   if (!hasApiShape) return null;
 
   return (
     <div className="space-y-6">
-      <ErpVerificationPanel erpVerification={result.erp_verification} />
-      <ValuationPanel valuation={valuation} erpVerification={result.erp_verification} />
+      <ErpVerificationPanel erpVerification={erpVerification} />
+      <ValuationPanel valuation={valuation} erpVerification={erpVerification} />
       <AssetProfilePanel asset={asset} />
       <ConditionPanel condition={condition} />
       <TrackingPanel result={result} identifiers={identifiers} />

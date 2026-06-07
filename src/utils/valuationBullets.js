@@ -1,20 +1,59 @@
 /**
- * Resolve valuation insight bullets from API (points array or legacy paragraph).
+ * Normalize ERP verification so bullet arrays exist (API points or legacy paragraphs).
+ * @param {object | null | undefined} erp
+ * @returns {object | null}
+ */
+export function normalizeErpVerification(erp) {
+  if (!erp || typeof erp !== 'object') return null;
+
+  const out = { ...erp };
+
+  if (!out.climate_valuation_points?.length && out.climate_valuation_note) {
+    out.climate_valuation_points = splitProseToBullets(out.climate_valuation_note);
+  }
+
+  if (!out.nbv_vs_market_points?.length && out.nbv_vs_market_note) {
+    out.nbv_vs_market_points = legacyNbvBullets(out.nbv_vs_market_note);
+  }
+
+  return out;
+}
+
+/**
+ * Resolve valuation insight bullets from ERP verification.
  * @param {object | null | undefined} erp
  * @param {'climate_valuation' | 'nbv_vs_market'} kind
  * @returns {string[]}
  */
 export function getValuationBullets(erp, kind) {
-  if (!erp) return [];
+  const normalized = normalizeErpVerification(erp);
+  if (!normalized) return [];
+
   const pointsKey = kind === 'climate_valuation' ? 'climate_valuation_points' : 'nbv_vs_market_points';
   const noteKey = kind === 'climate_valuation' ? 'climate_valuation_note' : 'nbv_vs_market_note';
-  if (Array.isArray(erp[pointsKey]) && erp[pointsKey].length) {
-    return erp[pointsKey].map(normalizeBullet);
+
+  if (Array.isArray(normalized[pointsKey]) && normalized[pointsKey].length) {
+    return normalized[pointsKey].map(normalizeBullet);
   }
-  if (erp[noteKey]) {
-    return splitProseToBullets(erp[noteKey]);
+
+  if (normalized[noteKey]) {
+    return kind === 'nbv_vs_market'
+      ? legacyNbvBullets(normalized[noteKey])
+      : splitProseToBullets(normalized[noteKey]);
   }
+
   return [];
+}
+
+/**
+ * Legacy NBV field sometimes duplicated the full climate paragraph — keep NBV-only lines.
+ * @param {string} note
+ * @returns {string[]}
+ */
+function legacyNbvBullets(note) {
+  const all = splitProseToBullets(note);
+  const focused = all.filter((b) => /\b(nbv|book|market|as-is|resale|books)\b/i.test(b));
+  return focused.length ? focused : all.slice(0, 2);
 }
 
 /**
@@ -38,10 +77,13 @@ export function splitProseToBullets(text) {
 
   const chunks = [];
   for (const block of raw.split(/[;\n]+/)) {
-    const part = block.trim();
+    let part = block.trim();
     if (!part) continue;
+    part = part.replace(/\s+—\s+/g, '. ');
     const sentences = part.split(/(?<=[.!?])\s+(?=[A-Z"(])/);
     chunks.push(...sentences);
   }
-  return [...new Set(chunks.map(normalizeBullet).filter(Boolean))];
+
+  const bullets = chunks.map(normalizeBullet).filter(Boolean);
+  return [...new Set(bullets)];
 }

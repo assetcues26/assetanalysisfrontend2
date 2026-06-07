@@ -1,6 +1,7 @@
 import { UPLOAD_PROCESSING_MODES } from '../constants/uploadMode';
 import { imageReadabilityText } from './tagReadability';
 import { enrichAssetAgeFields } from './assetAgeFields';
+import { normalizeErpVerification } from './valuationBullets';
 
 /**
  * @param {string | null | undefined} raw
@@ -162,6 +163,6 @@ export function mapAnalysisResponse(api, meta) {
     previewUrls,
     processingMode: meta.processingMode,
     apiRoute: meta.apiRoute,
-    erp_verification: api.demo_verification ?? null,
+    erp_verification: normalizeErpVerification(api.demo_verification),
   };
 }
