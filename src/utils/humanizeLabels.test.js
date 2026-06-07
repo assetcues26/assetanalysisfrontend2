@@ -10,6 +10,7 @@ describe('humanizeLabels', () => {
     expect(humanizeUncertaintyFlag('generation_ambiguous')).toMatch(/generation/i);
     expect(humanizeUncertaintyFlag('age_uncertain')).toMatch(/age/i);
     expect(humanizeUncertaintyFlags(['partial_view', 'valuation_uncertain'])).toHaveLength(2);
+    expect(humanizeUncertaintyFlags(['angle_missing_front'])[0]).toMatch(/front/i);
   });
 
   it('maps valuation status for clients', () => {

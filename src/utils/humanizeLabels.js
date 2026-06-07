@@ -8,6 +8,21 @@ const UNCERTAINTY_FLAG_LABELS = {
   age_uncertain: 'Asset age could not be estimated with enough confidence.',
   valuation_uncertain: 'Market value estimate needs a human check before client use.',
   identity_weak: 'Asset identity could not be verified with high confidence.',
+  angle_missing_front: 'No clear front or primary identifying face in the photos.',
+  angle_missing_tag_closeup: 'No readable asset tag or barcode close-up.',
+  angle_missing_damage_closeup: 'No close-up of visible damage.',
+  angle_missing_context_wide: 'No wide shot showing the asset in context.',
+};
+
+const VALIDATION_WARNING_LABELS = {
+  category_mismatch: 'Vision category does not match ERP category.',
+  coastal_rust_not_documented:
+    'Coastal site with outdoor metal damage but rust/corrosion not clearly documented.',
+  tag_readable_without_barcode: 'Tag marked readable but no barcode was detected.',
+  tag_readable_without_normalized_digits:
+    'Tag marked readable but normalized digits are missing — manual review suggested.',
+  make_mismatch_unflagged:
+    'Vision make differs from ERP without an uncertainty flag explaining the mismatch.',
 };
 
 const VALUATION_STATUS_LABELS = {
@@ -55,6 +70,16 @@ export function humanizeUncertaintyFlag(flag) {
   const key = String(flag || '').trim().toLowerCase();
   if (!key) return '';
   return UNCERTAINTY_FLAG_LABELS[key] || `${humanizeSnakeCase(key)}.`;
+}
+
+/**
+ * @param {string} code
+ * @returns {string}
+ */
+export function humanizeValidationWarning(code) {
+  const key = String(code || '').trim().toLowerCase();
+  if (!key) return '';
+  return VALIDATION_WARNING_LABELS[key] || humanizeSnakeCase(key);
 }
 
 /**

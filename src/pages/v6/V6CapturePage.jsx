@@ -14,6 +14,7 @@ import { BatchTray } from '../../components/batch/BatchTray';
 import { useCamera } from '../../hooks/useCamera';
 import { useV6 } from '../../hooks/useV6';
 import { useApp } from '../../context/AppContext';
+import { AngleChecklistCard } from '../../components/v6/AngleChecklistCard';
 
 export function V6CapturePage() {
   const navigate = useNavigate();
@@ -91,6 +92,13 @@ export function V6CapturePage() {
           onRetry={camera.retry}
           className="min-h-[min(55dvh,520px)] flex-1 sm:min-h-[min(65dvh,640px)]"
         />
+        <div className="mt-3 px-1">
+          <AngleChecklistCard
+            category={editedContext.category}
+            subcategory={editedContext.subcategory}
+            theme="dark"
+          />
+        </div>
         <p className="mt-2 px-1 text-center text-xs text-gray-400">
           V6 — photos are sent with ERP context for {editedContext.asset_name}
         </p>

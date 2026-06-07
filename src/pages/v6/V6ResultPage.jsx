@@ -12,6 +12,7 @@ import { HeroSection } from '../../components/layout/HeroSection';
 import { useV6 } from '../../hooks/useV6';
 import { useApp } from '../../context/AppContext';
 import { buildResultGallery } from '../../utils/blobUrls';
+import { TagZoomOverlay } from '../../components/result/TagZoomOverlay';
 
 export function V6ResultPage() {
   const { id } = useParams();
@@ -41,6 +42,12 @@ export function V6ResultPage() {
   }
 
   const galleryImages = buildResultGallery(entry);
+  const tagZoomHint = entry.erp_verification?.tag_zoom_hint ?? null;
+  const tagImageIndex =
+    tagZoomHint?.image_index != null ? tagZoomHint.image_index - 1 : null;
+  const showTagZoom =
+    tagZoomHint &&
+    (tagImageIndex == null || tagImageIndex === lightboxIndex);
 
   const handleExportPdf = async () => {
     setExportingPdf(true);
@@ -118,12 +125,14 @@ export function V6ResultPage() {
             >
               <X size={24} />
             </button>
-            <img
-              src={galleryImages[lightboxIndex]}
-              alt=""
-              className="max-h-[90vh] max-w-full object-contain"
-              onClick={(e) => e.stopPropagation()}
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <TagZoomOverlay
+                src={galleryImages[lightboxIndex]}
+                alt=""
+                tagZoomHint={showTagZoom ? tagZoomHint : null}
+                className="max-h-[90vh] max-w-full object-contain"
+              />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

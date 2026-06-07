@@ -10,6 +10,7 @@ import { BatchThumbnail } from '../../components/batch/BatchThumbnail';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { HeroSection } from '../../components/layout/HeroSection';
 import { useV6 } from '../../hooks/useV6';
+import { AngleChecklistCard } from '../../components/v6/AngleChecklistCard';
 
 export function V6BatchPage() {
   const navigate = useNavigate();
@@ -45,6 +46,13 @@ export function V6BatchPage() {
           <p className="mt-1 text-sm text-gray-500">
             ERP context + photos sent to the V6 analysis endpoint
           </p>
+
+          <div className="mt-6">
+            <AngleChecklistCard
+              category={editedContext.category}
+              subcategory={editedContext.subcategory}
+            />
+          </div>
 
           <div className="mt-8 grid grid-cols-3 gap-3 sm:grid-cols-4">
             {batchImages.map((img, idx) => (

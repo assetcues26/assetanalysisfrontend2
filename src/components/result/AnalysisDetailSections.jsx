@@ -20,6 +20,7 @@ import {
   humanizeRepairField,
   humanizeUncertaintyFlags,
   humanizeValuationStatus,
+  humanizeValidationWarning,
 } from '../../utils/humanizeLabels';
 import { tagReadableGridValue } from '../../utils/tagReadability';
 import {
@@ -328,6 +329,43 @@ function AssetProfilePanel({ asset }) {
   );
 }
 
+function PhotoCoverageBar({ score, angles }) {
+  if (score == null && !angles?.length) return null;
+  const pct = score != null ? Math.round((score / 5) * 100) : 0;
+  return (
+    <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+        Photo coverage
+        {score != null ? ` — ${score}/5` : ''}
+      </p>
+      {score != null && (
+        <div className="mb-3 h-2 overflow-hidden rounded-full bg-gray-200">
+          <div
+            className="h-full rounded-full bg-blue-600 transition-all"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      )}
+      {angles?.length > 0 && (
+        <ul className="space-y-1 text-sm text-gray-700">
+          {angles.map((angle) => (
+            <li key={angle.id} className="flex items-center gap-2">
+              <span
+                className={
+                  angle.satisfied ? 'text-emerald-600' : 'text-amber-600'
+                }
+              >
+                {angle.satisfied ? '✓' : '○'}
+              </span>
+              <span>{angle.label}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function ErpVerificationPanel({ erpVerification }) {
   if (!erpVerification) return null;
 
@@ -343,12 +381,19 @@ function ErpVerificationPanel({ erpVerification }) {
     return 'text-gray-600';
   };
 
+  const warnings = erpVerification.validation_warnings || [];
+
   return (
     <ResultPanel
       icon={Fingerprint}
       title="ERP verification"
       subtitle="Vision results compared to input payload"
     >
+      <PhotoCoverageBar
+        score={erpVerification.photo_coverage_score}
+        angles={erpVerification.photo_angles}
+      />
+
       <InfoGrid
         items={[
           [
@@ -357,9 +402,17 @@ function ErpVerificationPanel({ erpVerification }) {
               {yesNo(erpVerification.tag_number_match)}
             </span>,
           ],
+          ['Tag visible', erpVerification.tag_visible == null ? null : yesNo(erpVerification.tag_visible)],
+          ['Tag readable', erpVerification.tag_readable == null ? null : yesNo(erpVerification.tag_readable)],
           ['ERP tag (input)', erpVerification.erp_tag_number],
           ['Detected tag (vision)', erpVerification.detected_tag_number || erpVerification.detected_tag_number_raw],
           ['Tag match notes', erpVerification.tag_match_note],
+          [
+            'Category match',
+            erpVerification.category_match == null ? '—' : yesNo(erpVerification.category_match),
+          ],
+          ['ERP category', erpVerification.erp_category],
+          ['Vision category', erpVerification.vision_category],
           [
             'Make match (vision vs ERP)',
             erpVerification.make_match == null ? '—' : yesNo(erpVerification.make_match),
@@ -370,8 +423,27 @@ function ErpVerificationPanel({ erpVerification }) {
           ],
           ['Vision make', erpVerification.vision_make],
           ['Vision model', erpVerification.vision_model],
+          [
+            'Rust / corrosion noted',
+            erpVerification.rust_corrosion_noted == null
+              ? null
+              : yesNo(erpVerification.rust_corrosion_noted),
+          ],
+          ['Functional appearance', erpVerification.functional_appearance],
+          ['Location', erpVerification.location],
+          ['Climate profile', erpVerification.location_profile],
+          ['NBV vs market', erpVerification.nbv_vs_market_note],
+          ['Climate valuation note', erpVerification.climate_valuation_note],
         ]}
       />
+
+      {warnings.length > 0 && (
+        <ul className="mt-4 space-y-2 rounded-xl border border-amber-100 bg-amber-50/80 p-4 text-sm text-amber-900">
+          {warnings.map((code) => (
+            <li key={code}>{humanizeValidationWarning(code)}</li>
+          ))}
+        </ul>
+      )}
     </ResultPanel>
   );
 }

@@ -9,6 +9,7 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { HeroSection } from '../../components/layout/HeroSection';
 import { useV6 } from '../../hooks/useV6';
 import { useApp } from '../../context/AppContext';
+import { AngleChecklistCard } from '../../components/v6/AngleChecklistCard';
 
 export function V6UploadPage() {
   const navigate = useNavigate();
@@ -61,6 +62,13 @@ export function V6UploadPage() {
               Upload up to {maxImages} images. ERP context will be sent with this batch.
             </p>
           </header>
+
+          <div className="mb-6">
+            <AngleChecklistCard
+              category={editedContext.category}
+              subcategory={editedContext.subcategory}
+            />
+          </div>
 
           <DropZone
             onFilesSelected={handleFiles}
