@@ -1,12 +1,12 @@
-import { V6_DEMO_ENDPOINT } from '../config/api';
+import { V6_ERP_ANALYZE_ENDPOINT } from '../config/api';
 import { formatApiErrorMessage } from '../utils/apiErrorMessage';
 
 /**
  * @param {Array<{ file?: File, name?: string }>} images
- * @param {object} demoContext ERP demo context payload
+ * @param {object} erpContext ERP context payload
  * @param {{ locale?: string }} [options]
  */
-export async function analyzeDemoOnServer(images, demoContext, options = {}) {
+export async function analyzeV6OnServer(images, erpContext, options = {}) {
   const formData = new FormData();
   const locale = options.locale ?? 'en-IN';
 
@@ -17,10 +17,10 @@ export async function analyzeDemoOnServer(images, demoContext, options = {}) {
     const filename = img.name || img.file.name || 'image.jpg';
     formData.append('images', img.file, filename);
   }
-  formData.append('demo_context', JSON.stringify(demoContext));
+  formData.append('demo_context', JSON.stringify(erpContext));
   formData.append('locale', locale);
 
-  const response = await fetch(V6_DEMO_ENDPOINT, {
+  const response = await fetch(V6_ERP_ANALYZE_ENDPOINT, {
     method: 'POST',
     body: formData,
   });

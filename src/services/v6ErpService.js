@@ -5,20 +5,20 @@ import {
   mapAnalysisResponse,
 } from '../utils/mapAnalysisResponse';
 import { compressImage } from '../utils/imageCompression';
-import { V6_DEMO_ENDPOINT } from '../config/api';
-import { analyzeDemoOnServer } from './v6DemoApi';
+import { V6_ERP_ANALYZE_ENDPOINT } from '../config/api';
+import { analyzeV6OnServer } from './v6ErpApi';
 
 /**
  * @param {Array<{ id: string, file?: File, previewUrl: string, name?: string }>} images
- * @param {object} demoContext
+ * @param {object} erpContext
  * @param {{ locale?: string }} [options]
  */
-export async function analyzeDemoImages(images, demoContext, options = {}) {
+export async function analyzeV6Images(images, erpContext, options = {}) {
   if (!images?.length) {
     throw new Error('No images provided for analysis');
   }
-  if (!demoContext?.catalog_id) {
-    throw new Error('Demo context is required');
+  if (!erpContext?.catalog_id) {
+    throw new Error('ERP context is required');
   }
 
   const withFiles = images.filter((img) => img.file instanceof File);
@@ -35,7 +35,7 @@ export async function analyzeDemoImages(images, demoContext, options = {}) {
     })),
   );
 
-  const apiResponse = await analyzeDemoOnServer(compressedFiles, demoContext, {
+  const apiResponse = await analyzeV6OnServer(compressedFiles, erpContext, {
     locale: options.locale,
   });
 
@@ -49,6 +49,6 @@ export async function analyzeDemoImages(images, demoContext, options = {}) {
   return mapAnalysisResponse(apiResponse, {
     fallbackPreviewUrls,
     processingMode: UPLOAD_PROCESSING_MODES.DIRECT,
-    apiRoute: V6_DEMO_ENDPOINT,
+    apiRoute: V6_ERP_ANALYZE_ENDPOINT,
   });
 }

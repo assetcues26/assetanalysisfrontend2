@@ -81,13 +81,14 @@ export const SEED_HISTORY = [
   },
 ];
 
-/** Demo entries previously auto-seeded into localStorage — stripped on load for production. */
-export const DEMO_SEED_ENTRY_IDS = SEED_HISTORY.map((entry) => entry.id);
+/** Legacy sample entries previously auto-seeded into localStorage — stripped on load. */
+export const LEGACY_SEED_ENTRY_IDS = SEED_HISTORY.map((entry) => entry.id);
 
-export function isDemoSeedEntry(entry) {
+export function isLegacySeedEntry(entry) {
   if (!entry?.id) return false;
-  return DEMO_SEED_ENTRY_IDS.includes(entry.id) || String(entry.id).startsWith('seed-');
+  return LEGACY_SEED_ENTRY_IDS.includes(entry.id) || String(entry.id).startsWith('seed-');
 }
+
 
 export function createSampleAnalysisResult(overrides = {}) {
   const requestId = `req_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;

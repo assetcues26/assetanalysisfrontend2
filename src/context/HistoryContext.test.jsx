@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react';
 import {
   HistoryProvider,
   useHistoryContext,
-  stripDemoSeedEntries,
+  stripLegacySeedEntries,
 } from './HistoryContext';
 import { SEED_HISTORY } from '../utils/mockData';
 import { seedLocalHistory } from '../test/testUtils';
@@ -38,7 +38,7 @@ describe('HistoryContext', () => {
     });
   });
 
-  it('removes legacy demo seed entries on load', async () => {
+  it('removes legacy sample seed entries on load', async () => {
     seedLocalHistory(SEED_HISTORY);
     const { result } = renderHook(() => useHistoryContext(), { wrapper });
     await waitFor(() => {
@@ -48,9 +48,9 @@ describe('HistoryContext', () => {
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY))).toEqual([]);
   });
 
-  it('stripDemoSeedEntries keeps real scans', () => {
+  it('stripLegacySeedEntries keeps real scans', () => {
     const real = { id: 'hist-real-1', asset_name: 'Real Unit' };
-    const cleaned = stripDemoSeedEntries([...SEED_HISTORY, real]);
+    const cleaned = stripLegacySeedEntries([...SEED_HISTORY, real]);
     expect(cleaned).toEqual([real]);
   });
 

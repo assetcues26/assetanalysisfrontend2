@@ -9,14 +9,14 @@ import { Button } from '@/components/ui/button';
 import { AssetResultCard } from '../../components/result/AssetResultCard';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { HeroSection } from '../../components/layout/HeroSection';
-import { useDemoV6 } from '../../hooks/useDemoV6';
+import { useV6 } from '../../hooks/useV6';
 import { useApp } from '../../context/AppContext';
 import { buildResultGallery } from '../../utils/blobUrls';
 
-export function DemoV6ResultPage() {
+export function V6ResultPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getSessionResultById } = useDemoV6();
+  const { getSessionResultById } = useV6();
   const { showToast } = useApp();
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [exportingPdf, setExportingPdf] = useState(false);
@@ -26,7 +26,7 @@ export function DemoV6ResultPage() {
   useEffect(() => {
     if (!entry) {
       const t = setTimeout(() => {
-        if (!getSessionResultById(id)) navigate('/demo/v6', { replace: true });
+        if (!getSessionResultById(id)) navigate('/v6', { replace: true });
       }, 150);
       return () => clearTimeout(t);
     }
@@ -35,7 +35,7 @@ export function DemoV6ResultPage() {
   if (!entry) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-gray-600">
-        Loading demo report…
+        Loading report…
       </div>
     );
   }
@@ -58,9 +58,9 @@ export function DemoV6ResultPage() {
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-zinc-50">
       <div className="shrink-0">
         <CompactHeader
-          title="V6 Demo Report"
+          title="V6 Report"
           left={
-            <BackButton label="Catalog" onClick={() => navigate('/demo/v6')} />
+            <BackButton label="Catalog" onClick={() => navigate('/v6')} />
           }
         />
       </div>
@@ -69,7 +69,7 @@ export function DemoV6ResultPage() {
         <HeroSection>
           <PageWrapper className="py-6 pb-8">
             <p className="mb-4 text-xs font-medium uppercase tracking-wide text-blue-600">
-              prompt_version: {entry.prompt_version || 'v6-demo'}
+              {entry.prompt_version ? `Analysis version: ${entry.prompt_version}` : null}
             </p>
             <AssetResultCard
               result={entry}
@@ -85,9 +85,9 @@ export function DemoV6ResultPage() {
           <Button
             variant="outline"
             className="flex-1"
-            onClick={() => navigate(`/demo/v6/asset/${entry.demoContext?.catalog_id || ''}`)}
+            onClick={() => navigate(`/v6/asset/${entry.erpContext?.catalog_id || ''}`)}
           >
-            New demo scan
+            New scan
           </Button>
           <Button
             variant="outline"

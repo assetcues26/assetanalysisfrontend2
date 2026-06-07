@@ -1,3 +1,25 @@
+/**
+ * Format decimal years as "X years Y months" (nearest month).
+ * Passes through non-numeric strings unchanged.
+ * @param {number | string | null | undefined} yearsFloat
+ */
+export function formatAgeYearsMonths(yearsFloat) {
+  if (yearsFloat == null || yearsFloat === '') return '—';
+  if (typeof yearsFloat === 'string') {
+    const trimmed = yearsFloat.trim();
+    if (!/^\d+(\.\d+)?$/.test(trimmed)) return trimmed;
+    yearsFloat = Number(trimmed);
+  }
+  const num = Number(yearsFloat);
+  if (Number.isNaN(num)) return String(yearsFloat);
+  const totalMonths = Math.max(0, Math.round(num * 12));
+  const y = Math.floor(totalMonths / 12);
+  const m = totalMonths % 12;
+  if (y === 0) return `${m} month${m === 1 ? '' : 's'}`;
+  if (m === 0) return `${y} year${y === 1 ? '' : 's'}`;
+  return `${y} year${y === 1 ? '' : 's'} ${m} month${m === 1 ? '' : 's'}`;
+}
+
 export function formatProcessingTime(ms) {
   if (ms == null || Number.isNaN(Number(ms))) return '—';
   const seconds = Number(ms) / 1000;

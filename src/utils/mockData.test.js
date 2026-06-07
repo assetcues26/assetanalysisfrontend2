@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { SEED_HISTORY, createSampleAnalysisResult, isDemoSeedEntry } from './mockData';
+import { SEED_HISTORY, createSampleAnalysisResult, isLegacySeedEntry } from './mockData';
 
 describe('mockData', () => {
   it('seeds three distinct history entries', () => {
@@ -10,9 +10,9 @@ describe('mockData', () => {
     expect(names).toContain('Voltas Window AC');
   });
 
-  it('isDemoSeedEntry identifies legacy demo rows', () => {
-    expect(isDemoSeedEntry(SEED_HISTORY[0])).toBe(true);
-    expect(isDemoSeedEntry({ id: 'hist-real-99' })).toBe(false);
+  it('isLegacySeedEntry identifies legacy sample rows', () => {
+    expect(isLegacySeedEntry(SEED_HISTORY[0])).toBe(true);
+    expect(isLegacySeedEntry({ id: 'hist-real-99' })).toBe(false);
   });
 
   it('each seed entry has required LLM fields', () => {

@@ -7,10 +7,10 @@ import { DropZone } from '../../components/upload/DropZone';
 import { BatchTray } from '../../components/batch/BatchTray';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { HeroSection } from '../../components/layout/HeroSection';
-import { useDemoV6 } from '../../hooks/useDemoV6';
+import { useV6 } from '../../hooks/useV6';
 import { useApp } from '../../context/AppContext';
 
-export function DemoV6UploadPage() {
+export function V6UploadPage() {
   const navigate = useNavigate();
   const { showToast } = useApp();
   const {
@@ -21,10 +21,10 @@ export function DemoV6UploadPage() {
     removeImage,
     tryAddImages,
     canAddMore,
-  } = useDemoV6();
+  } = useV6();
 
   useEffect(() => {
-    if (!editedContext) navigate('/demo/v6', { replace: true });
+    if (!editedContext) navigate('/v6', { replace: true });
   }, [editedContext, navigate]);
 
   if (!editedContext) return null;
@@ -36,18 +36,18 @@ export function DemoV6UploadPage() {
       showToast(`${skipped} file(s) skipped — max ${maxImages} images`, 'warning');
     }
     if (added > 0 && batchCount + added >= 1) {
-      navigate('/demo/v6/batch');
+      navigate('/v6/batch');
     }
   };
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-zinc-50">
       <CompactHeader
-        title="Demo Upload"
+        title="Upload"
         left={
           <BackButton
             label="Back"
-            onClick={() => navigate(`/demo/v6/asset/${editedContext.catalog_id}`)}
+            onClick={() => navigate(`/v6/asset/${editedContext.catalog_id}`)}
           />
         }
         right={<ProgressPill current={batchCount} max={maxImages} />}
@@ -92,7 +92,7 @@ export function DemoV6UploadPage() {
             fullWidth
             label="Review batch"
             count={batchCount}
-            onClick={() => navigate('/demo/v6/batch')}
+            onClick={() => navigate('/v6/batch')}
           />
         </div>
       )}

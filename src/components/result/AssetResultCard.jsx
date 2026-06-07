@@ -8,7 +8,11 @@ import { AnalysisDetailSections, AnalysisMetaChips } from './AnalysisDetailSecti
 import { enrichAssetAgeFields } from '../../utils/assetAgeFields';
 import { ScanImageGallery } from './ScanImageGallery';
 import { HighlightMetric, InfoGrid, ProseBlock, ResultPanel } from './ResultLayout';
-import { formatInrMoneyRange, normalizeCondition } from '../../utils/formatters';
+import {
+  formatAgeYearsMonths,
+  formatInrMoneyRange,
+  normalizeCondition,
+} from '../../utils/formatters';
 import { tagReadabilityLabel, tagReadabilityStatus } from '../../utils/tagReadability';
 
 function CopyField({ value, label }) {
@@ -78,7 +82,7 @@ export function AssetResultCard({
   const hasExtended = Boolean(result.asset || result.conditionDetail || result.valuation);
   const asset = enrichAssetAgeFields(result.asset);
   const assetSubtitle = [asset?.brand, asset?.model, asset?.category].filter(Boolean).join(' · ');
-  const ageSummary = asset?.estimated_age_years;
+  const ageSummary = formatAgeYearsMonths(asset?.estimated_age_years);
   const modelYearSummary = asset?.estimated_model_years;
   const valuationRange = formatInrMoneyRange(result.valuation?.as_is?.inr);
   const hasValuation = valuationRange !== '—';
@@ -89,6 +93,13 @@ export function AssetResultCard({
       : null;
   const tagHighlight =
     rawTag && rawTag.length > 18 ? `${rawTag.slice(0, 16)}…` : rawTag || 'Not detected';
+  const erpVerify = result.erp_verification;
+  const tagMatchLabel =
+    erpVerify != null
+      ? erpVerify.tag_number_match
+        ? 'Tag match: Yes'
+        : 'Tag match: No'
+      : null;
 
   const handleExportPdf = async () => {
     if (onExportPdf) {
@@ -131,6 +142,17 @@ export function AssetResultCard({
               >
                 {tagBadgeLabel}
               </span>
+              {tagMatchLabel && (
+                <span
+                  className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${
+                    erpVerify.tag_number_match
+                      ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                      : 'border-amber-200 bg-amber-50 text-amber-900'
+                  }`}
+                >
+                  {tagMatchLabel}
+                </span>
+              )}
             </div>
             <div className="mt-3">
               <AnalysisMetaChips result={result} />
@@ -174,11 +196,23 @@ export function AssetResultCard({
             variant={hasValuation ? 'primary' : 'muted'}
           />
           <HighlightMetric
-            label="Asset tag"
-            value={tagHighlight}
-            hint={rawTag && rawTag.length > 18 ? 'Full tag in Tracking' : undefined}
-            mono
-            variant="muted"
+            label={erpVerify ? 'Tag match' : 'Asset tag'}
+            value={
+              erpVerify
+                ? erpVerify.tag_number_match
+                  ? 'Yes'
+                  : 'No'
+                : tagHighlight
+            }
+            hint={
+              erpVerify
+                ? erpVerify.detected_tag_number || erpVerify.erp_tag_number || 'See ERP verification'
+                : rawTag && rawTag.length > 18
+                  ? 'Full tag in Tracking'
+                  : undefined
+            }
+            mono={!erpVerify}
+            variant={erpVerify?.tag_number_match ? 'primary' : erpVerify ? 'warning' : 'muted'}
           />
           <HighlightMetric
             label="Age"

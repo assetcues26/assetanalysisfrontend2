@@ -9,8 +9,8 @@ import {
 import { StatusCycler } from '../../components/processing/StatusCycler';
 import { Button } from '@/components/ui/button';
 import { HeroSection } from '../../components/layout/HeroSection';
-import { useDemoV6 } from '../../hooks/useDemoV6';
-import { analyzeDemoImages } from '../../services/v6DemoService';
+import { useV6 } from '../../hooks/useV6';
+import { analyzeV6Images } from '../../services/v6ErpService';
 
 const ANALYSIS_TIMEOUT_MS = 120_000;
 
@@ -32,7 +32,7 @@ function withTimeout(promise, ms) {
   });
 }
 
-export function DemoV6ProcessingPage() {
+export function V6ProcessingPage() {
   const navigate = useNavigate();
   const {
     batchImages,
@@ -42,7 +42,7 @@ export function DemoV6ProcessingPage() {
     addSessionResult,
     analysisError,
     setAnalysisError,
-  } = useDemoV6();
+  } = useV6();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const runIdRef = useRef(0);
   const completedRef = useRef(false);
@@ -60,12 +60,12 @@ export function DemoV6ProcessingPage() {
 
   useEffect(() => {
     if (!editedContext) {
-      navigate('/demo/v6', { replace: true });
+      navigate('/v6', { replace: true });
       return;
     }
     if (batchCount === 0) {
       if (!isAnalyzing && !completedRef.current) {
-        navigate('/demo/v6/upload', { replace: true });
+        navigate('/v6/upload', { replace: true });
       }
       return;
     }
@@ -84,7 +84,7 @@ export function DemoV6ProcessingPage() {
     setIsAnalyzing(true);
     completedRef.current = false;
 
-    withTimeout(analyzeDemoImages(readyImages, editedContext), ANALYSIS_TIMEOUT_MS)
+    withTimeout(analyzeV6Images(readyImages, editedContext), ANALYSIS_TIMEOUT_MS)
       .then((result) => {
         if (runId !== runIdRef.current) return;
         const entry = addSessionResult({
@@ -95,7 +95,7 @@ export function DemoV6ProcessingPage() {
         setAnalysisError(null);
         clearBatch();
         completedRef.current = true;
-        navigate(`/demo/v6/result/${entry.id}`, { replace: true });
+        navigate(`/v6/result/${entry.id}`, { replace: true });
       })
       .catch((err) => {
         if (runId !== runIdRef.current) return;
@@ -128,7 +128,7 @@ export function DemoV6ProcessingPage() {
         <AlertCircle size={56} className="text-red-400" />
         <h1 className="text-xl font-bold text-gray-900">V6 analysis failed</h1>
         <p className="max-w-md text-center text-gray-600">{analysisError}</p>
-        <Button onClick={() => navigate('/demo/v6/batch')}>Try Again</Button>
+        <Button onClick={() => navigate('/v6/batch')}>Try Again</Button>
       </div>
     );
   }
@@ -143,7 +143,7 @@ export function DemoV6ProcessingPage() {
         >
           <ProcessingAnimation />
           <p className="mt-6 text-center text-sm text-gray-600">
-            V6 demo analyzing {readyImages.length} image{readyImages.length === 1 ? '' : 's'} with
+            V6 analyzing {readyImages.length} image{readyImages.length === 1 ? '' : 's'} with
             ERP context…
           </p>
           <div className="mt-10 w-full max-w-md">

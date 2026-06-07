@@ -19,5 +19,5 @@ export const ASSET_ANALYSIS_ENDPOINTS = {
   multi: `${ASSET_ANALYSIS_API_BASE}/v1/assets/analyze/multi`,
 };
 
-export const V6_DEMO_ENDPOINT = `${ASSET_ANALYSIS_API_BASE}/v6/demo/analyze/multi`;
-export const V6_DEMO_CATALOG_ENDPOINT = `${ASSET_ANALYSIS_API_BASE}/v6/demo/catalog`;
+export const V6_ERP_ANALYZE_ENDPOINT = `${ASSET_ANALYSIS_API_BASE}/v6/demo/analyze/multi`;
+export const V6_ERP_CATALOG_ENDPOINT = `${ASSET_ANALYSIS_API_BASE}/v6/demo/catalog`;

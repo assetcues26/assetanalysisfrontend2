@@ -7,7 +7,12 @@ import {
 } from 'lucide-react';
 import { LabelChip } from '../ui/LabelChip';
 import { ConfidenceBar } from '../ui/ConfidenceBar';
-import { formatConfidence, formatList, formatInrMoneyRange } from '../../utils/formatters';
+import {
+  formatAgeYearsMonths,
+  formatConfidence,
+  formatList,
+  formatInrMoneyRange,
+} from '../../utils/formatters';
 import { formatPlacement, formatStickerType } from '../../utils/placementFormatters';
 import { enrichAssetAgeFields } from '../../utils/assetAgeFields';
 import {
@@ -51,7 +56,7 @@ function hasMoneyRange(range) {
   return range?.min != null || range?.max != null;
 }
 
-function ValuationPanel({ valuation }) {
+function ValuationPanel({ valuation, erpVerification }) {
   if (!valuation) return null;
 
   const hasAmounts =
@@ -98,12 +103,31 @@ function ValuationPanel({ valuation }) {
 
           {valuation.nbv?.age_years_used != null && (
             <p className="text-sm text-gray-600">
-              NBV calculated using approximately{' '}
-              <span className="font-semibold text-gray-900">
-                {valuation.nbv.age_years_used} years
-              </span>{' '}
-              of age.
+              {valuation.nbv.method === 'erp_book_nbv' ? (
+                <>
+                  Book NBV from ERP input. Asset age from acquisition date:{' '}
+                  <span className="font-semibold text-gray-900">
+                    {formatAgeYearsMonths(valuation.nbv.age_years_used)}
+                  </span>
+                  .
+                </>
+              ) : (
+                <>
+                  NBV calculated using approximately{' '}
+                  <span className="font-semibold text-gray-900">
+                    {formatAgeYearsMonths(valuation.nbv.age_years_used)}
+                  </span>{' '}
+                  of age.
+                </>
+              )}
             </p>
+          )}
+
+          {erpVerification?.climate_valuation_note && (
+            <div className="rounded-xl border border-sky-200 bg-sky-50/80 px-4 py-3 text-sm leading-relaxed text-sky-950">
+              <p className="font-semibold text-sky-900">Location & climate impact on current estimate</p>
+              <p className="mt-1.5">{erpVerification.climate_valuation_note}</p>
+            </div>
           )}
 
           {valuation.nbv_exceeds_as_is != null && (
@@ -118,7 +142,7 @@ function ValuationPanel({ valuation }) {
                 NBV exceeds current estimate? {valuation.nbv_exceeds_as_is ? 'Yes' : 'No'}
               </p>
               <p className="mt-1 text-xs opacity-80">
-                We allow about 10% wiggle room either way these figures are estimates, not precise numbers.
+                We allow about 10% wiggle room either way — these figures are estimates, not
                 precise numbers.
               </p>
               {valuation.nbv_vs_as_is_note && (
@@ -288,7 +312,7 @@ function AssetProfilePanel({ asset }) {
           ['Material', asset.material],
           ['Dimensions', asset.estimated_dimensions],
           ['Model year', asset.estimated_model_years],
-          ['Age (today)', asset.estimated_age_years],
+          ['Age (today)', formatAgeYearsMonths(asset.estimated_age_years)],
           ['Serial number', asset.serial_number],
           ['Normalized tag', asset.asset_tag_number],
           ['Quantity', asset.quantity != null ? String(asset.quantity) : null],
@@ -298,6 +322,54 @@ function AssetProfilePanel({ asset }) {
             'Distinguishing features',
             asset.distinguishing_features?.length ? formatList(asset.distinguishing_features) : null,
           ],
+        ]}
+      />
+    </ResultPanel>
+  );
+}
+
+function ErpVerificationPanel({ erpVerification }) {
+  if (!erpVerification) return null;
+
+  const yesNo = (value) => {
+    if (value === true) return 'Yes';
+    if (value === false) return 'No';
+    return '—';
+  };
+
+  const matchVariant = (value) => {
+    if (value === true) return 'text-emerald-700';
+    if (value === false) return 'text-red-700';
+    return 'text-gray-600';
+  };
+
+  return (
+    <ResultPanel
+      icon={Fingerprint}
+      title="ERP verification"
+      subtitle="Vision results compared to input payload"
+    >
+      <InfoGrid
+        items={[
+          [
+            'Tag number match',
+            <span key="tag-match" className={`font-semibold ${matchVariant(erpVerification.tag_number_match)}`}>
+              {yesNo(erpVerification.tag_number_match)}
+            </span>,
+          ],
+          ['ERP tag (input)', erpVerification.erp_tag_number],
+          ['Detected tag (vision)', erpVerification.detected_tag_number || erpVerification.detected_tag_number_raw],
+          ['Tag match notes', erpVerification.tag_match_note],
+          [
+            'Make match (vision vs ERP)',
+            erpVerification.make_match == null ? '—' : yesNo(erpVerification.make_match),
+          ],
+          [
+            'Model match (vision vs ERP)',
+            erpVerification.model_match == null ? '—' : yesNo(erpVerification.model_match),
+          ],
+          ['Vision make', erpVerification.vision_make],
+          ['Vision model', erpVerification.vision_model],
         ]}
       />
     </ResultPanel>
@@ -454,7 +526,8 @@ export function AnalysisDetailSections({ result }) {
 
   return (
     <div className="space-y-6">
-      <ValuationPanel valuation={valuation} />
+      <ErpVerificationPanel erpVerification={result.erp_verification} />
+      <ValuationPanel valuation={valuation} erpVerification={result.erp_verification} />
       <AssetProfilePanel asset={asset} />
       <ConditionPanel condition={condition} />
       <TrackingPanel result={result} identifiers={identifiers} />

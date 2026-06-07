@@ -6,15 +6,15 @@ import {
   useRef,
   useState,
 } from 'react';
-import { catalogToContext } from '../demo/demoCatalog';
+import { catalogToContext } from '../v6/erpCatalog';
 
-const DemoV6SessionContext = createContext(null);
+const V6SessionContext = createContext(null);
 const MAX_IMAGES = 10;
 
 function createBatchItem(file) {
   const previewUrl = URL.createObjectURL(file);
   return {
-    id: `demo-img-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    id: `v6-img-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
     file,
     previewUrl,
     name: file.name,
@@ -23,7 +23,7 @@ function createBatchItem(file) {
   };
 }
 
-export function DemoV6Provider({ children }) {
+export function V6Provider({ children }) {
   const [selectedCatalogAsset, setSelectedCatalogAsset] = useState(null);
   const [editedContext, setEditedContext] = useState(null);
   const [batchImages, setBatchImages] = useState([]);
@@ -111,9 +111,9 @@ export function DemoV6Provider({ children }) {
   );
 
   const addSessionResult = useCallback((entry) => {
-    const id = entry.id || `demo-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id = entry.id || `v6-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const processedAt = entry.processedAt || new Date().toISOString();
-    const newEntry = { ...entry, id, processedAt, demoContext: editedContext };
+    const newEntry = { ...entry, id, processedAt, erpContext: editedContext };
     setSessionResults((prev) => [newEntry, ...prev]);
     setLastResult(newEntry);
     return newEntry;
@@ -170,16 +170,14 @@ export function DemoV6Provider({ children }) {
   );
 
   return (
-    <DemoV6SessionContext.Provider value={value}>
-      {children}
-    </DemoV6SessionContext.Provider>
+    <V6SessionContext.Provider value={value}>{children}</V6SessionContext.Provider>
   );
 }
 
-export function useDemoV6Context() {
-  const ctx = useContext(DemoV6SessionContext);
+export function useV6Context() {
+  const ctx = useContext(V6SessionContext);
   if (!ctx) {
-    throw new Error('useDemoV6Context must be used within DemoV6Provider');
+    throw new Error('useV6Context must be used within V6Provider');
   }
   return ctx;
 }

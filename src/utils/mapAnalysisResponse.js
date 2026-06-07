@@ -162,5 +162,6 @@ export function mapAnalysisResponse(api, meta) {
     previewUrls,
     processingMode: meta.processingMode,
     apiRoute: meta.apiRoute,
+    erp_verification: api.demo_verification ?? null,
   };
 }

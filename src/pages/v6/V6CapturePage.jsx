@@ -12,10 +12,10 @@ import { ShutterButton } from '../../components/capture/ShutterButton';
 import { FlashToggle } from '../../components/capture/FlashToggle';
 import { BatchTray } from '../../components/batch/BatchTray';
 import { useCamera } from '../../hooks/useCamera';
-import { useDemoV6 } from '../../hooks/useDemoV6';
+import { useV6 } from '../../hooks/useV6';
 import { useApp } from '../../context/AppContext';
 
-export function DemoV6CapturePage() {
+export function V6CapturePage() {
   const navigate = useNavigate();
   const { showToast } = useApp();
   const {
@@ -26,7 +26,7 @@ export function DemoV6CapturePage() {
     removeImage,
     addImage,
     canAddMore,
-  } = useDemoV6();
+  } = useV6();
   const camera = useCamera();
   const cameraApiRef = useRef(camera);
   cameraApiRef.current = camera;
@@ -35,7 +35,7 @@ export function DemoV6CapturePage() {
   const [capturing, setCapturing] = useState(false);
 
   useEffect(() => {
-    if (!editedContext) navigate('/demo/v6', { replace: true });
+    if (!editedContext) navigate('/v6', { replace: true });
   }, [editedContext, navigate]);
 
   useEffect(() => () => cameraApiRef.current.handleUnmount(), []);
@@ -44,7 +44,7 @@ export function DemoV6CapturePage() {
 
   const goBack = () => {
     if (batchCount > 0) setLeaveConfirm(true);
-    else navigate(`/demo/v6/asset/${editedContext.catalog_id}`);
+    else navigate(`/v6/asset/${editedContext.catalog_id}`);
   };
 
   const handleCapture = async () => {
@@ -64,7 +64,7 @@ export function DemoV6CapturePage() {
     }
 
     addImage(file);
-    showToast('Photo added to demo batch', 'success');
+    showToast('Photo added to batch', 'success');
   };
 
   const contentBottomPad = batchCount >= 1 ? 'pb-[22rem]' : 'pb-[18rem]';
@@ -73,7 +73,7 @@ export function DemoV6CapturePage() {
     <div className="flex min-h-[100dvh] flex-col bg-gray-950 text-gray-100">
       <CompactHeader
         variant="dark"
-        ariaLabel="Demo capture"
+        ariaLabel="capture"
         center={<BrandLogo className="h-7 w-auto brightness-0 invert sm:h-8" />}
         left={<BackButton label="Back" onClick={goBack} variant="dark" />}
         right={<ProgressPill current={batchCount} max={maxImages} variant="dark" />}
@@ -92,7 +92,7 @@ export function DemoV6CapturePage() {
           className="min-h-[min(55dvh,520px)] flex-1 sm:min-h-[min(65dvh,640px)]"
         />
         <p className="mt-2 px-1 text-center text-xs text-gray-400">
-          V6 demo — photos are sent with ERP context for {editedContext.asset_name}
+          V6 — photos are sent with ERP context for {editedContext.asset_name}
         </p>
       </div>
 
@@ -102,7 +102,7 @@ export function DemoV6CapturePage() {
             <ProceedButton
               label="Review batch"
               count={batchCount}
-              onClick={() => navigate('/demo/v6/batch')}
+              onClick={() => navigate('/v6/batch')}
               className="w-full"
             />
           </div>
@@ -144,9 +144,9 @@ export function DemoV6CapturePage() {
       <ConfirmModal
         open={leaveConfirm}
         title="Leave capture?"
-        description="Your demo batch is kept in this session."
+        description="Your batch is kept in this session."
         confirmLabel="Leave"
-        onConfirm={() => navigate(`/demo/v6/asset/${editedContext.catalog_id}`)}
+        onConfirm={() => navigate(`/v6/asset/${editedContext.catalog_id}`)}
         onCancel={() => setLeaveConfirm(false)}
       />
     </div>

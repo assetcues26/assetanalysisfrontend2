@@ -6,7 +6,7 @@ import {
   useMemo,
   useState,
 } from 'react';
-import { isDemoSeedEntry } from '../utils/mockData';
+import { isLegacySeedEntry } from '../utils/mockData';
 import { persistEntryImages } from '../utils/blobUrls';
 
 const STORAGE_KEY = 'assetlens_history';
@@ -44,11 +44,12 @@ function persistHistory(entries) {
   }
 }
 
-/** Remove legacy demo seed rows from persisted history (one-time cleanup on load). */
-export function stripDemoSeedEntries(entries) {
+/** Remove legacy sample seed rows from persisted history (one-time cleanup on load). */
+export function stripLegacySeedEntries(entries) {
   if (!Array.isArray(entries)) return [];
-  return entries.filter((entry) => !isDemoSeedEntry(entry));
+  return entries.filter((entry) => !isLegacySeedEntry(entry));
 }
+
 
 export function HistoryProvider({ children }) {
   const [history, setHistory] = useState([]);
@@ -56,7 +57,7 @@ export function HistoryProvider({ children }) {
 
   useEffect(() => {
     const stored = loadHistory();
-    const cleaned = stripDemoSeedEntries(stored ?? []);
+    const cleaned = stripLegacySeedEntries(stored ?? []);
     if (stored && cleaned.length !== stored.length) {
       persistHistory(cleaned);
     }

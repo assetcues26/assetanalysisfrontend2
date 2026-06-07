@@ -6,17 +6,17 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { HeroSection } from '../../components/layout/HeroSection';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { DEMO_CATALOG, formatInr } from '../../demo/demoCatalog';
-import { useDemoV6 } from '../../hooks/useDemoV6';
+import { ERP_CATALOG, formatInr } from '../../v6/erpCatalog';
+import { useV6 } from '../../hooks/useV6';
 
-export function DemoV6CatalogPage() {
+export function V6CatalogPage() {
   const navigate = useNavigate();
-  const { sessionResults } = useDemoV6();
+  const { sessionResults } = useV6();
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-zinc-50">
       <CompactHeader
-        title="V6 Demo Catalog"
+        title="V6 Catalog"
         left={<BackButton label="Home" onClick={() => navigate('/')} />}
       />
 
@@ -24,7 +24,7 @@ export function DemoV6CatalogPage() {
         <PageWrapper className="py-6 pb-12">
           <header className="mb-8 max-w-3xl">
             <Badge className="mb-3">
-              ERP + Vision Demo
+              ERP + Vision 
             </Badge>
             <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
               Select a catalog asset
@@ -43,7 +43,7 @@ export function DemoV6CatalogPage() {
                   <li key={entry.id}>
                     <button
                       type="button"
-                      onClick={() => navigate(`/demo/v6/result/${entry.id}`)}
+                      onClick={() => navigate(`/v6/result/${entry.id}`)}
                       className="text-sm text-blue-700 underline-offset-2 hover:underline"
                     >
                       {entry.asset_name || 'Analysis'} —{' '}
@@ -56,7 +56,7 @@ export function DemoV6CatalogPage() {
           )}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {DEMO_CATALOG.map((asset, idx) => (
+            {ERP_CATALOG.map((asset, idx) => (
               <motion.div
                 key={asset.catalog_id}
                 initial={{ opacity: 0, y: 12 }}
@@ -65,7 +65,7 @@ export function DemoV6CatalogPage() {
               >
                 <Card
                   hover
-                  onClick={() => navigate(`/demo/v6/asset/${asset.catalog_id}`)}
+                  onClick={() => navigate(`/v6/asset/${asset.catalog_id}`)}
                   className="h-full p-5 text-left"
                 >
                   <p className="text-xs font-medium uppercase tracking-wide text-gray-500">

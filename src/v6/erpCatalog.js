@@ -1,8 +1,8 @@
-/** Hardcoded ERP demo catalog — mirrors backend app/data/demo_catalog.json */
+/** Hardcoded ERP catalog — mirrors backend ERP asset catalog */
 
-export const DEMO_CATALOG = [
+export const ERP_CATALOG = [
   {
-    catalog_id: 'demo-ac-001',
+    catalog_id: 'ac-001',
     asset_name: 'Micromax Split AC',
     description:
       '1.5 ton split air conditioner with outdoor condenser unit. Typical office floor installation with wall-mounted indoor unit.',
@@ -17,7 +17,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005536',
   },
   {
-    catalog_id: 'demo-laptop-002',
+    catalog_id: 'laptop-002',
     asset_name: 'Dell Latitude 5420 Laptop',
     description:
       '14-inch business laptop with aluminium lid, used for field sales and office work.',
@@ -32,7 +32,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005537',
   },
   {
-    catalog_id: 'demo-printer-003',
+    catalog_id: 'printer-003',
     asset_name: 'HP LaserJet Pro M404dn',
     description:
       'Monochrome laser printer for shared office printing. Includes network port and duplex tray.',
@@ -47,7 +47,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005538',
   },
   {
-    catalog_id: 'demo-ac-004',
+    catalog_id: 'ac-004',
     asset_name: 'Voltas Window AC',
     description:
       '1.5 ton window air conditioner installed in a ground-floor training room.',
@@ -62,7 +62,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005539',
   },
   {
-    catalog_id: 'demo-chair-005',
+    catalog_id: 'chair-005',
     asset_name: 'Godrej Interio Office Chair',
     description:
       'Ergonomic mesh-back office chair with adjustable armrests and rolling base.',
@@ -77,7 +77,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005540',
   },
   {
-    catalog_id: 'demo-display-006',
+    catalog_id: 'display-006',
     asset_name: 'Samsung 55-inch Commercial Display',
     description:
       '55-inch 4K UHD display for lobby signage and meeting room presentations.',
@@ -92,7 +92,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005541',
   },
   {
-    catalog_id: 'demo-gen-007',
+    catalog_id: 'gen-007',
     asset_name: 'Cummins Diesel Generator 62.5 kVA',
     description:
       'Standby diesel generator with acoustic canopy for plant backup power.',
@@ -107,7 +107,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005542',
   },
   {
-    catalog_id: 'demo-desktop-008',
+    catalog_id: 'desktop-008',
     asset_name: 'Lenovo ThinkCentre M70q',
     description:
       'Compact desktop PC for accounts workstation with VESA mount behind monitor.',
@@ -122,7 +122,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005543',
   },
   {
-    catalog_id: 'demo-cooler-009',
+    catalog_id: 'cooler-009',
     asset_name: 'Blue Star Water Cooler',
     description:
       'Floor-standing bottled water cooler for shopfloor hydration point.',
@@ -137,7 +137,7 @@ export const DEMO_CATALOG = [
     asset_tag_number: '100301912005544',
   },
   {
-    catalog_id: 'demo-vehicle-010',
+    catalog_id: 'vehicle-010',
     asset_name: 'Tata Nexon Fleet Vehicle',
     description:
       'Compact SUV used for regional sales visits. Exterior inspection for dents, paint, and tyre wear.',
@@ -154,7 +154,7 @@ export const DEMO_CATALOG = [
 ];
 
 export function getCatalogAsset(catalogId) {
-  return DEMO_CATALOG.find((a) => a.catalog_id === catalogId) ?? null;
+  return ERP_CATALOG.find((a) => a.catalog_id === catalogId) ?? null;
 }
 
 export function catalogToContext(asset) {
