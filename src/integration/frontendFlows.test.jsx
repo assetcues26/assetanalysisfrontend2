@@ -36,11 +36,11 @@ describe('Frontend integration flows', () => {
 
     await user.click(screen.getByRole('button', { name: 'Search' }));
     const search = screen.getByRole('searchbox');
-    await user.type(search, 'Voltas');
+    await user.type(search, 'Macbook');
 
     await waitFor(
       () => {
-        expect(screen.getByText('Voltas Window AC')).toBeInTheDocument();
+        expect(screen.getByText('Apple Macbook Pro')).toBeInTheDocument();
         expect(screen.queryByText('Carrier Split AC Unit')).not.toBeInTheDocument();
       },
       { timeout: 2000 },

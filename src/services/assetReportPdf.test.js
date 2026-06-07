@@ -11,6 +11,8 @@ const setFontSize = vi.fn();
 const setTextColor = vi.fn();
 const setDrawColor = vi.fn();
 const setLineWidth = vi.fn();
+const setFillColor = vi.fn();
+const rect = vi.fn();
 
 vi.mock('jspdf', () => ({
   jsPDF: vi.fn().mockImplementation(() => ({
@@ -21,12 +23,14 @@ vi.mock('jspdf', () => ({
     textWithLink: (label, x, y) => text(label, x, y),
     link: vi.fn(),
     line,
+    rect,
     splitTextToSize,
     setFont,
     setFontSize,
     setTextColor,
     setDrawColor,
     setLineWidth,
+    setFillColor,
     save,
   })),
 }));
@@ -79,12 +83,31 @@ describe('exportAssetReportPdf', () => {
       condition: 'Good',
       request_id: 'req-pdf-1',
       processing_time_ms: 5000,
-      analysis_method: 'collage',
-      processingMode: 'collage',
-      mergedImageUrl: 'data:image/jpeg;base64,abc',
+      analysis_method: 'multi_image',
+      processingMode: 'direct',
       previewUrls: ['data:image/jpeg;base64,def'],
-      asset: { brand: 'York', category: 'HVAC' },
-      conditionDetail: { grade: 'Good', summary: 'OK' },
+      asset: { brand: 'York', category: 'HVAC', model: 'YCIV' },
+      conditionDetail: {
+        grade: 'Good',
+        summary: 'OK',
+        damage_items: [{ type: 'dent', severity: 'minor', detail: 'Small dent' }],
+        repair_plan: { summary: 'Cosmetic only', items: [] },
+      },
+      valuation: {
+        as_is: { inr: { min: 18000, max: 20000 } },
+        nbv: { inr: { min: 14200, max: 14200 }, method: 'erp_book_nbv', age_years_used: 5.2 },
+        like_new_reference: { inr: { min: 30000, max: 32000 } },
+        confidence: 0.7,
+      },
+      erpContext: { catalog_id: 'ac-001', book_nbv_inr: 14200, location: 'Mumbai' },
+      erp_verification: {
+        tag_number_match: true,
+        nbv_vs_market_points: ['Book NBV from ERP is the baseline.'],
+        climate_valuation_points: ['Coastal humid site.'],
+      },
+      identifiers: { asset_tag_number_raw: 'TAG-99', stickers: [{ label_text: 'HP', sticker_type: 'brand' }] },
+      reasoning_summary: { narrative: 'Test narrative', uncertainty_flags: ['partial_view'] },
+      confidence: { overall: 0.8 },
       detected_tag_number_raw: 'TAG-99',
       asset_description: 'Unit description',
       token_usage: { total_tokens: 1000 },

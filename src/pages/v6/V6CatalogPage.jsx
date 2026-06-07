@@ -6,12 +6,14 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { HeroSection } from '../../components/layout/HeroSection';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { ERP_CATALOG, formatInr } from '../../v6/erpCatalog';
+import { formatInr } from '../../v6/erpCatalog';
+import { useErpCatalog } from '../../v6/useErpCatalog';
 import { useV6 } from '../../hooks/useV6';
 
 export function V6CatalogPage() {
   const navigate = useNavigate();
   const { sessionResults } = useV6();
+  const { catalog, loading } = useErpCatalog();
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-zinc-50">
@@ -30,7 +32,7 @@ export function V6CatalogPage() {
               Select a catalog asset
             </h1>
             <p className="mt-2 text-sm leading-relaxed text-gray-600">
-              Pick one of ten realistic India ERP assets. Edit fields, add photos, and analyze with
+              Pick one of nine realistic India ERP assets. Edit fields, add photos, and analyze with
               the isolated V6 endpoint. Session history clears when you close this tab.
             </p>
           </header>
@@ -55,8 +57,12 @@ export function V6CatalogPage() {
             </section>
           )}
 
+          {loading && (
+            <p className="mb-4 text-sm text-gray-500">Loading FAR catalog…</p>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ERP_CATALOG.map((asset, idx) => (
+            {catalog.map((asset, idx) => (
               <motion.div
                 key={asset.catalog_id}
                 initial={{ opacity: 0, y: 12 }}
@@ -78,9 +84,12 @@ export function V6CatalogPage() {
                   <p className="mt-2 text-xs text-gray-500">{asset.location}</p>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs">
                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">
-                      Acq. {asset.acquisition_date}
+                      Tag {asset.asset_tag_number}
                     </span>
                     <span className="rounded-full bg-gray-100 px-2 py-0.5 text-gray-700">
+                      Cost {formatInr(asset.original_cost_inr)}
+                    </span>
+                    <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-emerald-800">
                       NBV {formatInr(asset.book_nbv_inr)}
                     </span>
                   </div>

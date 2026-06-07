@@ -7,7 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '../../components/ui/Card';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { HeroSection } from '../../components/layout/HeroSection';
-import { getCatalogAsset, formatInr } from '../../v6/erpCatalog';
+import { formatInr } from '../../v6/erpCatalog';
+import { useErpCatalog } from '../../v6/useErpCatalog';
+import { FarRegisterSummary } from '../../components/v6/FarRegisterSummary';
 import { useV6 } from '../../hooks/useV6';
 
 const FIELDS = [
@@ -28,18 +30,20 @@ export function V6AssetPage() {
   const { catalogId } = useParams();
   const navigate = useNavigate();
   const { editedContext, selectCatalogAsset, updateEditedContext } = useV6();
+  const { getCatalogAsset, loading: catalogLoading } = useErpCatalog();
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (catalogLoading) return;
     const asset = getCatalogAsset(catalogId);
     if (!asset) {
       navigate('/v6', { replace: true });
       return;
     }
     selectCatalogAsset(asset);
-  }, [catalogId, navigate, selectCatalogAsset]);
+  }, [catalogId, navigate, selectCatalogAsset, getCatalogAsset, catalogLoading]);
 
-  if (!editedContext) {
+  if (catalogLoading || !editedContext) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-gray-600">
         Loading asset…
@@ -123,6 +127,8 @@ export function V6AssetPage() {
               </form>
               {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
             </Card>
+
+            <FarRegisterSummary asset={editedContext} />
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <Card hover onClick={() => proceed('/v6/capture')} className="p-5">

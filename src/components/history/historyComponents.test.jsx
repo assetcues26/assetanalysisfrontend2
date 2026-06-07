@@ -55,7 +55,7 @@ describe('History components', () => {
 
     expect(screen.getByText('Carrier Split AC Unit')).toBeInTheDocument();
 
-    expect(screen.getByText('Voltas Window AC')).toBeInTheDocument();
+    expect(screen.getByText('Apple Macbook Pro')).toBeInTheDocument();
 
   });
 

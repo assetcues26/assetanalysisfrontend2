@@ -7,7 +7,7 @@ describe('mockData', () => {
     const names = SEED_HISTORY.map((e) => e.asset_name);
     expect(names).toContain('Carrier Split AC Unit');
     expect(names).toContain('Daikin Inverter AC');
-    expect(names).toContain('Voltas Window AC');
+    expect(names).toContain('Apple Macbook Pro');
   });
 
   it('isLegacySeedEntry identifies legacy sample rows', () => {

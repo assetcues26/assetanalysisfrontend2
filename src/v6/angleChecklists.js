@@ -139,7 +139,7 @@ const CATEGORY_OVERRIDES = {
 function normCategoryKey(category, subcategory) {
   const raw = `${category || ''} ${subcategory || ''}`.toLowerCase();
   if (/hvac|split ac|window ac|cooler|air condition/.test(raw)) return 'hvac';
-  if (/laptop|desktop|printer|display|monitor|it equipment|computer/.test(raw)) {
+  if (/laptop|desktop|printer|display|monitor|it equipment|it assets|computer|macbook/.test(raw)) {
     return 'itequipment';
   }
   if (/furniture|chair|desk|cabinet|godrej/.test(raw)) return 'furniture';

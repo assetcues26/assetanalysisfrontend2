@@ -60,23 +60,24 @@ export const SEED_HISTORY = [
     previewUrls: [],
   },
   {
-    id: 'seed-voltas-003',
+    id: 'seed-macbook-003',
     processedAt: daysAgo(7),
-    request_id: 'req_c8a41f55_voltas',
-    asset_name: 'Voltas Window AC',
-    condition: 'Poor',
+    request_id: 'req_c8a41f55_macbook',
+    asset_name: 'Apple Macbook Pro',
+    condition: 'Fair',
     asset_condition:
-      'Significant rust on lower chassis. Bent louvers on air outlet. Barcode partially obscured by adhesive residue; tag number recovered with reduced confidence.',
-    detected_tag_number_raw: 'VLT-WAC-183-44210',
-    processing_time_ms: 31200,
-    barcodeposition: 'Upper-left of the rating label; 40% occlusion from residue.',
+      'Silver MacBook Pro with light keyboard wear and minor palm-rest scuffs. Screen and hinge operate normally. Asset tag and QR label legible on lower right palm rest.',
+    detected_tag_number_raw: '1000002129',
+    processing_time_ms: 28400,
+    barcodeposition:
+      'Lower-right palm rest, black asset tag with QR code adjacent to trackpad.',
     tag_detection_reasoning:
-      'Partial OCR recovery using adjacent model number cross-reference. Confidence lowered due to glare and obstruction.',
+      'Asset tag number 1000002129 read from QR-adjacent numeric block with high OCR confidence. Matches ERP register format.',
     asset_description:
-      'Compact window AC unit with visible rust streaks and discolored plastic grille. Power cord intact; filter cover missing.',
-    stitching_confidence: 0.72,
-    image_readability: 'Unreadable',
-    visible_labels: ['Voltas', '1.5 Ton', 'Window AC', '44210'],
+      'Apple MacBook Pro laptop on desk with AssetCues tracking screen visible. Aluminium unibody with Apple logo on lid; asset tag affixed per company policy.',
+    stitching_confidence: 0.88,
+    image_readability: 'Readable',
+    visible_labels: ['Apple', 'MacBook Pro', '1000002129', 'AssetCues', 'Do not remove this tag'],
     previewUrls: [],
   },
 ];
