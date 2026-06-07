@@ -18,3 +18,6 @@ export const ASSET_ANALYSIS_ENDPOINTS = {
   collage: `${ASSET_ANALYSIS_API_BASE}/v1/assets/analyze/collage`,
   multi: `${ASSET_ANALYSIS_API_BASE}/v1/assets/analyze/multi`,
 };
+
+export const V6_DEMO_ENDPOINT = `${ASSET_ANALYSIS_API_BASE}/v6/demo/analyze/multi`;
+export const V6_DEMO_CATALOG_ENDPOINT = `${ASSET_ANALYSIS_API_BASE}/v6/demo/catalog`;

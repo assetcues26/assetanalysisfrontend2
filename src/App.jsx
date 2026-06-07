@@ -2,6 +2,7 @@ import { AppProvider } from './context/AppContext';
 import { BatchProvider } from './context/BatchContext';
 import { CameraProvider } from './context/CameraContext';
 import { HistoryProvider } from './context/HistoryContext';
+import { DemoV6Provider } from './context/DemoV6SessionContext';
 import { ToastContainer } from './components/ui/Toast';
 import { AppRouter } from './router/AppRouter';
 
@@ -11,8 +12,10 @@ export default function App() {
       <CameraProvider>
         <HistoryProvider>
           <BatchProvider>
-            <AppRouter />
-            <ToastContainer />
+            <DemoV6Provider>
+              <AppRouter />
+              <ToastContainer />
+            </DemoV6Provider>
           </BatchProvider>
         </HistoryProvider>
       </CameraProvider>

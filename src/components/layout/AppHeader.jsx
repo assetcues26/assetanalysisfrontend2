@@ -22,6 +22,16 @@ export function AppHeader() {
           aria-label="Main navigation"
         >
           <LandingSettings />
+          <Link
+            to="/demo/v6"
+            className={`touch-target touch-manipulation shrink-0 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-200 sm:px-3 sm:text-sm ${
+              location.pathname.startsWith('/demo/v6')
+                ? 'bg-violet-100 text-violet-900'
+                : 'text-violet-700 hover:bg-violet-50 hover:text-violet-900'
+            }`}
+          >
+            V6 Endpoint
+          </Link>
           {navLinks.map((link) => (
             <Link
               key={link.label}
