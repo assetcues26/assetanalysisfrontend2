@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Camera, Upload } from 'lucide-react';
+import { Camera, Upload, RefreshCw } from 'lucide-react';
 import { CompactHeader } from '../../components/layout/AppHeader';
 import { BackButton } from '../../components/ui/BackButton';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,10 @@ import { formatInr } from '../../v6/erpCatalog';
 import { useErpCatalog } from '../../v6/useErpCatalog';
 import { FarRegisterSummary } from '../../components/v6/FarRegisterSummary';
 import { useV6 } from '../../hooks/useV6';
+import { recomputeFar } from '../../v6/farCalculator';
+
+/** Fields that, when changed, automatically re-derive all FAR figures. */
+const FAR_DRIVERS = new Set(['acquisition_date', 'original_cost_inr', 'useful_life_years']);
 
 const FIELDS = [
   { key: 'asset_name', label: 'Asset name', required: true },
@@ -21,7 +25,7 @@ const FIELDS = [
   { key: 'subcategory', label: 'Subcategory' },
   { key: 'acquisition_date', label: 'Acquisition date', type: 'date', required: true },
   { key: 'original_cost_inr', label: 'Original cost (INR)', type: 'number', required: true },
-  { key: 'book_nbv_inr', label: 'Book NBV today (INR)', type: 'number', required: true },
+  { key: 'useful_life_years', label: 'Useful life (years)', type: 'number' },
   { key: 'location', label: 'Location', required: true },
   { key: 'asset_tag_number', label: 'Asset tag number' },
 ];
@@ -43,6 +47,31 @@ export function V6AssetPage() {
     selectCatalogAsset(asset);
   }, [catalogId, navigate, selectCatalogAsset, getCatalogAsset, catalogLoading]);
 
+  /**
+   * Handle field changes. When a FAR driver changes (date / cost / useful life),
+   * recompute all SLM fields and merge them into the context so NBV, age,
+   * annual depreciation, and accumulated depreciation update live.
+   */
+  const handleFieldChange = useCallback(
+    (key, rawValue) => {
+      const value = key === 'original_cost_inr' || key === 'useful_life_years'
+        ? Number(rawValue)
+        : rawValue;
+
+      const next = { ...editedContext, [key]: value };
+
+      if (FAR_DRIVERS.has(key)) {
+        const far = recomputeFar(next);
+        if (far) {
+          updateEditedContext({ [key]: value, ...far });
+          return;
+        }
+      }
+      updateEditedContext({ [key]: value });
+    },
+    [editedContext, updateEditedContext],
+  );
+
   if (catalogLoading || !editedContext) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-gray-600">
@@ -56,7 +85,6 @@ export function V6AssetPage() {
     if (!editedContext.location?.trim()) return 'Location is required';
     if (!editedContext.acquisition_date) return 'Acquisition date is required';
     if (Number(editedContext.original_cost_inr) <= 0) return 'Original cost must be positive';
-    if (Number(editedContext.book_nbv_inr) < 0) return 'Book NBV cannot be negative';
     return null;
   };
 
@@ -98,33 +126,65 @@ export function V6AssetPage() {
               <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
                 {FIELDS.map((field) => (
                   <label key={field.key} className="block">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
                       {field.label}
-                      {field.required ? ' *' : ''}
+                      {field.required && <span className="text-red-500">*</span>}
+                      {FAR_DRIVERS.has(field.key) && (
+                        <span
+                          title="Changing this recalculates NBV and all depreciation figures"
+                          className="inline-flex items-center gap-0.5 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700"
+                        >
+                          <RefreshCw size={9} />
+                          auto-recalc
+                        </span>
+                      )}
                     </span>
                     {field.type === 'textarea' ? (
                       <textarea
                         className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         rows={3}
                         value={editedContext[field.key] ?? ''}
-                        onChange={(e) => updateEditedContext({ [field.key]: e.target.value })}
+                        onChange={(e) => handleFieldChange(field.key, e.target.value)}
                       />
                     ) : (
                       <input
                         type={field.type || 'text'}
                         className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         value={editedContext[field.key] ?? ''}
-                        onChange={(e) =>
-                          updateEditedContext({
-                            [field.key]:
-                              field.type === 'number' ? Number(e.target.value) : e.target.value,
-                          })
-                        }
+                        onChange={(e) => handleFieldChange(field.key, e.target.value)}
                       />
                     )}
                   </label>
                 ))}
               </form>
+
+              {/* Live computed NBV summary — updates as soon as any FAR driver changes */}
+              <div className="mt-5 rounded-lg bg-violet-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-violet-600">
+                  Computed from SLM formula
+                </p>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+                  <span className="text-gray-500">Book NBV today</span>
+                  <span className="text-right font-semibold text-violet-900">
+                    {formatInr(editedContext.book_nbv_inr)}
+                  </span>
+                  <span className="text-gray-500">Asset age</span>
+                  <span className="text-right font-medium text-gray-800">
+                    {editedContext.asset_age_years != null
+                      ? `${editedContext.asset_age_years} yrs`
+                      : '—'}
+                  </span>
+                  <span className="text-gray-500">Annual depreciation</span>
+                  <span className="text-right font-medium text-gray-800">
+                    {formatInr(editedContext.annual_depreciation_inr)}
+                  </span>
+                  <span className="text-gray-500">Accumulated dep.</span>
+                  <span className="text-right font-medium text-gray-800">
+                    {formatInr(editedContext.accumulated_depreciation_inr)}
+                  </span>
+                </div>
+              </div>
+
               {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
             </Card>
 
