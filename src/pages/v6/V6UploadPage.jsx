@@ -30,9 +30,9 @@ export function V6UploadPage() {
 
   if (!editedContext) return null;
 
-  const handleFiles = (files) => {
+  const handleFiles = async (files) => {
     if (!files.length) return;
-    const { added, skipped } = tryAddImages(files);
+    const { added, skipped } = await tryAddImages(files);
     if (skipped > 0) {
       showToast(`${skipped} file(s) skipped — max ${maxImages} images`, 'warning');
     }

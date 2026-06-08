@@ -13,30 +13,35 @@ export function AppHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-200 bg-white/90 pt-safe backdrop-blur-md">
-      <div className="flex h-14 w-full items-center justify-between gap-2 px-safe sm:h-16 sm:gap-4 sm:pl-6 sm:pr-6 lg:pl-8 lg:pr-8">
-        <Link to="/" className="flex shrink-0 items-center touch-manipulation" aria-label="Home">
-          <BrandLogo className="h-8 w-auto sm:h-11 md:h-12" />
+      <div className="flex h-14 w-full items-center gap-2 px-safe sm:h-16 sm:gap-4 sm:pl-6 sm:pr-6 lg:pl-8 lg:pr-8">
+        <Link
+          to="/"
+          className="flex max-w-[42%] shrink-0 items-center touch-manipulation sm:max-w-none"
+          aria-label="Home"
+        >
+          <BrandLogo className="h-7 w-auto sm:h-11 md:h-12" />
         </Link>
         <nav
-          className="relative flex min-w-0 flex-1 items-center justify-end gap-0.5 sm:gap-2"
+          className="flex min-w-0 flex-1 items-center justify-end gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] sm:gap-2 [&::-webkit-scrollbar]:hidden"
           aria-label="Main navigation"
         >
           <LandingSettings />
           <Link
             to="/v6"
-            className={`touch-target touch-manipulation shrink-0 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-200 sm:px-3 sm:text-sm ${
+            className={`touch-target touch-manipulation shrink-0 rounded-lg px-2 py-2 text-xs font-medium transition-all duration-200 sm:px-3 sm:text-sm ${
               location.pathname.startsWith('/v6')
                 ? 'bg-violet-100 text-violet-900'
                 : 'text-violet-700 hover:bg-violet-50 hover:text-violet-900'
             }`}
           >
-            V6 Endpoint
+            <span className="sm:hidden">V6</span>
+            <span className="hidden sm:inline">V6 Endpoint</span>
           </Link>
           {navLinks.map((link) => (
             <Link
               key={link.label}
               to={link.to}
-              className={`touch-target touch-manipulation shrink-0 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-200 sm:px-3 sm:text-sm ${
+              className={`touch-target touch-manipulation hidden shrink-0 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-200 sm:inline-flex sm:px-3 sm:text-sm ${
                 location.pathname === link.to
                   ? 'bg-gray-100 text-gray-900'
                   : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'

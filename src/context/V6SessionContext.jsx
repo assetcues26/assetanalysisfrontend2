@@ -7,6 +7,7 @@ import {
   useState,
 } from 'react';
 import { catalogToContext } from '../v6/erpCatalog';
+import { compressImage } from '../utils/imageCompression';
 
 const V6SessionContext = createContext(null);
 const MAX_IMAGES = 10;
@@ -58,8 +59,9 @@ export function V6Provider({ children }) {
   }, []);
 
   const addImage = useCallback(
-    (file) => {
-      const item = createBatchItem(file);
+    async (file) => {
+      const compressed = await compressImage(file);
+      const item = createBatchItem(compressed);
       trackUrl(item.previewUrl);
       setBatchImages((prev) => [...prev, item]);
       return item;
@@ -68,8 +70,9 @@ export function V6Provider({ children }) {
   );
 
   const addImages = useCallback(
-    (files) => {
-      const items = files.map((file) => {
+    async (files) => {
+      const compressed = await Promise.all(files.map((file) => compressImage(file)));
+      const items = compressed.map((file) => {
         const item = createBatchItem(file);
         trackUrl(item.previewUrl);
         return item;
@@ -99,12 +102,12 @@ export function V6Provider({ children }) {
   }, [revokeUrl]);
 
   const tryAddImages = useCallback(
-    (files) => {
+    async (files) => {
       const list = Array.from(files);
       const remaining = MAX_IMAGES - batchImages.length;
       if (remaining <= 0) return { added: 0, skipped: list.length };
       const toAdd = list.slice(0, remaining);
-      addImages(toAdd);
+      await addImages(toAdd);
       return { added: toAdd.length, skipped: list.length - toAdd.length };
     },
     [batchImages.length, addImages],

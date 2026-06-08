@@ -64,7 +64,7 @@ export function V6CapturePage() {
       return;
     }
 
-    addImage(file);
+    await addImage(file);
     showToast('Photo added to batch', 'success');
   };
 
@@ -125,7 +125,7 @@ export function V6CapturePage() {
           theme="dark"
         />
 
-        <div className="px-4 pt-2">
+        <div className="px-4 pt-2 sm:px-6">
           <CameraZoomControls
             zoomLevel={camera.zoomLevel}
             onZoomChange={camera.setZoomLevel}
@@ -133,13 +133,13 @@ export function V6CapturePage() {
           />
         </div>
 
-        <div className="flex items-center justify-between px-4 pb-4 pt-2">
+        <div className="flex items-center justify-between px-4 pb-4 pt-2 sm:px-6 sm:pb-6">
           <button
             type="button"
             onClick={camera.flipCamera}
             disabled={camera.status === 'denied'}
             aria-label="Flip camera"
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-gray-800 text-gray-100"
+            className="touch-target touch-manipulation flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-gray-800 text-gray-100 active:bg-gray-700 disabled:opacity-40"
           >
             <SwitchCamera size={24} />
           </button>
