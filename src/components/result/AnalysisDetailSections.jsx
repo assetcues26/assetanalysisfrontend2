@@ -232,13 +232,7 @@ function ConditionPanel({ condition }) {
       {condition.overall_score != null && (
         <div className="mb-5">
           <ConfidenceBar
-            value={
-              condition.overall_score > 10
-                ? condition.overall_score / 100
-                : condition.overall_score > 1
-                  ? condition.overall_score / 10
-                  : condition.overall_score
-            }
+            value={condition.overall_score / 100}
             label="Condition score"
           />
         </div>
