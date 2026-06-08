@@ -64,7 +64,8 @@ export function formatRelativeTime(dateInput) {
 export function normalizeCondition(condition) {
   if (!condition) return null;
   const lower = String(condition).trim().toLowerCase();
-  if (lower === 'excellent' || lower === 'good') return 'Good';
+  if (lower === 'excellent') return 'Excellent';
+  if (lower === 'good') return 'Good';
   if (lower === 'fair' || lower === 'average') return 'Fair';
   if (lower === 'poor' || lower === 'bad' || lower === 'damaged' || lower === 'critical') return 'Poor';
   return null;

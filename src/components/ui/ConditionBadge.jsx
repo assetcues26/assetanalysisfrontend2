@@ -1,7 +1,11 @@
-import { AlertTriangle, CheckCircle2, MinusCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, MinusCircle, Star } from 'lucide-react';
 import { normalizeCondition } from '../../utils/formatters';
 
 const config = {
+  Excellent: {
+    icon: Star,
+    className: 'bg-green-500/15 text-green-600 border-green-500/40',
+  },
   Good: {
     icon: CheckCircle2,
     className: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/40',
@@ -18,7 +22,8 @@ const config = {
 
 export function ConditionBadge({ condition }) {
   const normalized = normalizeCondition(condition);
-  const { icon: Icon, className } = config[normalized] || config.Fair;
+  if (!normalized) return null;
+  const { icon: Icon, className } = config[normalized];
 
   return (
     <span
