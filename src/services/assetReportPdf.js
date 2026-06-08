@@ -133,9 +133,9 @@ async function prepareImageForPdf(src, maxWidthPx = 480, quality = 0.68) {
 /**
  * Load the brand logo for the PDF header.
  * Uses loadImage() directly so the browser's native image loader resolves the
- * Vite-generated asset URL without going through fetch/FileReader (which can
- * fail with CORS or encoding issues in some production environments).
- * Outputs PNG so transparent areas render correctly on the white PDF page.
+ * Vite-generated asset URL without going through fetch/FileReader.
+ * Outputs PNG without a white background fill so the logo's transparent areas
+ * show through to the header colour instead of rendering as a white box.
  */
 async function prepareLogoForPdf(src) {
   const img = await loadImage(src);
@@ -146,8 +146,7 @@ async function prepareLogoForPdf(src) {
   canvas.height = h;
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, w, h);
+  // No white fill — keep PNG transparency so the logo sits cleanly on any background colour
   ctx.drawImage(img, 0, 0, w, h);
   return {
     dataUrl: canvas.toDataURL('image/png'),
@@ -885,9 +884,9 @@ export async function exportAssetReportPdf(entry) {
 
   try {
     const logo = await prepareLogoForPdf(companyLogoUrl);
-    const logoW = 40;
-    const logoH = Math.min(14, (logo.height / logo.width) * logoW);
-    doc.addImage(logo.dataUrl, 'PNG', MARGIN, 8, logoW, logoH);
+    const logoW = 48;
+    const logoH = Math.min(16, (logo.height / logo.width) * logoW);
+    doc.addImage(logo.dataUrl, 'PNG', MARGIN, 6, logoW, logoH);
   } catch {
     // Fallback: brand name text in dark slate so it's always legible on the light header
     doc.setFont('helvetica', 'bold');
