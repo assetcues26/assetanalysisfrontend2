@@ -75,8 +75,8 @@
     "annual_depreciation_inr": 2848.1,
     "depreciation_years_charged": 3.56,
     "asset_age_years": 3.56,
-    "accumulated_depreciation_inr": 10139.0,
-    "book_nbv_inr": 4851,
+    "accumulated_depreciation_inr": 10137.0,
+    "book_nbv_inr": 4853,
     "far_as_of_date": "2026-06-07"
   },
   {
@@ -155,8 +155,8 @@
     "annual_depreciation_inr": 6935.0,
     "depreciation_years_charged": 4.08,
     "asset_age_years": 4.08,
-    "accumulated_depreciation_inr": 28267.0,
-    "book_nbv_inr": 8233,
+    "accumulated_depreciation_inr": 28272.0,
+    "book_nbv_inr": 8228,
     "far_as_of_date": "2026-06-07"
   },
   {
@@ -195,8 +195,8 @@
     "annual_depreciation_inr": 1216.0,
     "depreciation_years_charged": 5.14,
     "asset_age_years": 5.14,
-    "accumulated_depreciation_inr": 6250.0,
-    "book_nbv_inr": 6550,
+    "accumulated_depreciation_inr": 6256.0,
+    "book_nbv_inr": 6544,
     "far_as_of_date": "2026-06-07"
   },
   {
@@ -235,8 +235,8 @@
     "annual_depreciation_inr": 53833.33,
     "depreciation_years_charged": 1.27,
     "asset_age_years": 1.27,
-    "accumulated_depreciation_inr": 68197.0,
-    "book_nbv_inr": 781803,
+    "accumulated_depreciation_inr": 68240.0,
+    "book_nbv_inr": 781760,
     "far_as_of_date": "2026-06-07"
   }
 ]

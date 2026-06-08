@@ -66,6 +66,14 @@ export function V6AssetPage() {
           updateEditedContext({ [key]: value, ...far });
           return;
         }
+        updateEditedContext({
+          [key]: value,
+          book_nbv_inr: null,
+          accumulated_depreciation_inr: null,
+          annual_depreciation_inr: null,
+          asset_age_years: null,
+        });
+        return;
       }
       updateEditedContext({ [key]: value });
     },

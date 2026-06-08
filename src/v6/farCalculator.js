@@ -55,7 +55,7 @@ export function resolveUsefulLife(item) {
 export function computeSlmFar(originalCost, acquisitionDate, usefulLifeYears, opts = {}) {
   const { residualPct = DEFAULT_RESIDUAL_PCT, asOf = todayIso() } = opts;
 
-  if (!acquisitionDate || originalCost <= 0 || usefulLifeYears <= 0) return null;
+  if (!acquisitionDate || !originalCost || Number.isNaN(Number(originalCost)) || Number(originalCost) <= 0 || usefulLifeYears <= 0) return null;
 
   const acqMs = Date.parse(acquisitionDate);
   const asOfMs = Date.parse(asOf);

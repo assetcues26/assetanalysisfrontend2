@@ -32,10 +32,11 @@ export function formatConfidence(value) {
 }
 
 export function formatFileSize(bytes) {
-  if (!bytes || bytes === 0) return '0 B';
+  const n = Number(bytes);
+  if (!bytes || n <= 0 || Number.isNaN(n)) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  return `${(bytes / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+  const i = Math.floor(Math.log(n) / Math.log(1024));
+  return `${(n / 1024 ** i).toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
 }
 
 export function formatRelativeTime(dateInput) {
@@ -61,14 +62,12 @@ export function formatRelativeTime(dateInput) {
 }
 
 export function normalizeCondition(condition) {
-  if (!condition) return 'Fair';
-  const value = String(condition).trim();
-  const lower = value.toLowerCase();
-  if (lower === 'good' || lower === 'excellent') return 'Good';
+  if (!condition) return null;
+  const lower = String(condition).trim().toLowerCase();
+  if (lower === 'excellent' || lower === 'good') return 'Good';
   if (lower === 'fair' || lower === 'average') return 'Fair';
-  if (lower === 'poor' || lower === 'bad' || lower === 'damaged') return 'Poor';
-  if (value === 'Good' || value === 'Fair' || value === 'Poor') return value;
-  return 'Fair';
+  if (lower === 'poor' || lower === 'bad' || lower === 'damaged' || lower === 'critical') return 'Poor';
+  return null;
 }
 
 /**
@@ -77,9 +76,12 @@ export function normalizeCondition(condition) {
  */
 export function formatMoneyRange(range, symbol = '₹') {
   if (!range || range.min == null || range.max == null) return '—';
+  const minNum = Number(range.min);
+  const maxNum = Number(range.max);
+  if (Number.isNaN(minNum) || Number.isNaN(maxNum)) return '—';
   const locale = symbol === '₹' ? 'en-IN' : undefined;
-  const min = Number(range.min).toLocaleString(locale, { maximumFractionDigits: 0 });
-  const max = Number(range.max).toLocaleString(locale, { maximumFractionDigits: 0 });
+  const min = minNum.toLocaleString(locale, { maximumFractionDigits: 0 });
+  const max = maxNum.toLocaleString(locale, { maximumFractionDigits: 0 });
   return `${symbol}${min} – ${symbol}${max}`;
 }
 

@@ -244,6 +244,7 @@ function ConditionPanel({ condition }) {
           ['Cosmetic', condition.cosmetic_condition],
           ['Structural', condition.structural_condition],
           ['Functional', condition.functional_status],
+          ['Cleanliness', condition.cleanliness],
           ['Wear', condition.wear_level],
           ['Usability', condition.usability],
           ['Repair recommendation', condition.repair_recommendation],
