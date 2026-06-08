@@ -130,6 +130,32 @@ async function prepareImageForPdf(src, maxWidthPx = 480, quality = 0.68) {
   };
 }
 
+/**
+ * Load the brand logo for the PDF header.
+ * Uses loadImage() directly so the browser's native image loader resolves the
+ * Vite-generated asset URL without going through fetch/FileReader (which can
+ * fail with CORS or encoding issues in some production environments).
+ * Outputs PNG so transparent areas render correctly on the white PDF page.
+ */
+async function prepareLogoForPdf(src) {
+  const img = await loadImage(src);
+  const w = img.naturalWidth || img.width || 320;
+  const h = img.naturalHeight || img.height || 80;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas unavailable');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  return {
+    dataUrl: canvas.toDataURL('image/png'),
+    width: w,
+    height: h,
+  };
+}
+
 function collectReportImages(entry) {
   const isMulti =
     entry.analysis_method === 'multi_image' ||
@@ -854,15 +880,17 @@ export async function exportAssetReportPdf(entry) {
   const state = createPageState(doc);
 
   try {
-    const logo = await prepareImageForPdf(companyLogoUrl, 320, 0.75);
+    const logo = await prepareLogoForPdf(companyLogoUrl);
     const logoW = 40;
     const logoH = Math.min(14, (logo.height / logo.width) * logoW);
-    doc.addImage(logo.dataUrl, 'JPEG', MARGIN, 8, logoW, logoH);
+    doc.addImage(logo.dataUrl, 'PNG', MARGIN, 8, logoW, logoH);
   } catch {
+    // Fallback: render brand name as text if image load fails
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
+    doc.setFontSize(16);
     doc.setTextColor(37, 99, 235);
-    doc.text('AssetCues', MARGIN, 16);
+    doc.text('AssetCues', MARGIN, 18);
+    doc.setFont('helvetica', 'normal');
   }
 
   state.y = drawCoverHeader(doc, entry, state.y);
