@@ -879,21 +879,23 @@ export async function exportAssetReportPdf(entry) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
   const state = createPageState(doc);
 
+  // Draw the header background, title, and date first — then overlay the logo
+  // on top. Previous code drew the logo before the background rect which covered it.
+  state.y = drawCoverHeader(doc, entry, state.y);
+
   try {
     const logo = await prepareLogoForPdf(companyLogoUrl);
     const logoW = 40;
     const logoH = Math.min(14, (logo.height / logo.width) * logoW);
     doc.addImage(logo.dataUrl, 'PNG', MARGIN, 8, logoW, logoH);
   } catch {
-    // Fallback: render brand name as text if image load fails
+    // Fallback: brand name text in dark slate so it's always legible on the light header
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
-    doc.setTextColor(37, 99, 235);
-    doc.text('AssetCues', MARGIN, 18);
+    doc.setTextColor(15, 23, 42);
+    doc.text('AssetCues', MARGIN, 20);
     doc.setFont('helvetica', 'normal');
   }
-
-  state.y = drawCoverHeader(doc, entry, state.y);
   drawSummaryMetrics(state, entry);
   drawViewAssetLink(state, entry);
 
