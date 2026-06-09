@@ -219,7 +219,10 @@ export function ProcessingPage() {
     }
 
     // Start one analysis per unique batch; never restart for identity-only
-    // changes (session polling) or isAnalyzing/error state flips.
+    // changes (session polling) or isAnalyzing/error state flips, and never
+    // start a second run while one is already in flight (e.g. a late phone
+    // image changing the batch key mid-analysis).
+    if (analyzingRef.current) return undefined;
     if (startedBatchKeyRef.current === batchKey) return undefined;
     startedBatchKeyRef.current = batchKey;
 
@@ -229,9 +232,13 @@ export function ProcessingPage() {
     analyzingRef.current = true;
     completedRef.current = false;
 
+    const MAX_ANALYZE_IMAGES = 10;
     const materializeAndAnalyze = async () => {
-      const locals = readyImagesRef.current;
-      const remotes = remoteImagesRef.current;
+      const locals = readyImagesRef.current.slice(0, MAX_ANALYZE_IMAGES);
+      const remotes = remoteImagesRef.current.slice(
+        0,
+        Math.max(0, MAX_ANALYZE_IMAGES - locals.length),
+      );
       const downloaded = await Promise.all(
         remotes.map(async (img, i) => {
           const response = await fetch(img.previewUrl);

@@ -50,6 +50,7 @@ export function SessionProvider({ children }) {
   }, []);
 
   const clearSession = useCallback(() => {
+    abortActiveSessionAnalyze();
     setToken(null);
     setSession(null);
     completedHandledRef.current = null;
@@ -237,6 +238,9 @@ export function SessionProvider({ children }) {
     [token, clearBatch, clearSessionImages, showToast, clearSession],
   );
 
+  const batchImagesRef = useRef(batchImages);
+  batchImagesRef.current = batchImages;
+
   useEffect(() => {
     if (!token || !enabled) return undefined;
 
@@ -248,10 +252,19 @@ export function SessionProvider({ children }) {
         if (cancelled) return;
         setSession(data);
 
+        // Never interfere with a direct laptop analysis in progress
+        // (/processing without ?session= runs the fast local path).
+        const onDirectProcessing =
+          location.pathname.startsWith('/processing') &&
+          !location.search.includes('session');
+
         if (
           data.status === 'analyzing' &&
           !analysisCancelledRef.current &&
-          (data.image_count || 0) > 0
+          (data.image_count || 0) > 0 &&
+          // Don't drop local laptop files by redirecting to the
+          // session-only poll view — locals would be excluded.
+          batchImagesRef.current.length === 0
         ) {
           const onLaptopSyncPage = LAPTOP_SYNC_PATHS.some((p) =>
             location.pathname.startsWith(p),
@@ -261,7 +274,7 @@ export function SessionProvider({ children }) {
           }
         }
 
-        if (data.status === 'completed' && data.entry_id) {
+        if (data.status === 'completed' && data.entry_id && !onDirectProcessing) {
           if (completedHandledRef.current === data.entry_id) return;
           completedHandledRef.current = data.entry_id;
           clearBatch();
@@ -285,7 +298,7 @@ export function SessionProvider({ children }) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [token, enabled, location.pathname, navigate, clearBatch, clearSession]);
+  }, [token, enabled, location.pathname, location.search, navigate, clearBatch, clearSession]);
 
   const isSessionActive = Boolean(token && session?.status === 'active');
   const isSessionAnalyzing = Boolean(token && session?.status === 'analyzing');

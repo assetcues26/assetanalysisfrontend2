@@ -62,20 +62,22 @@ export function MobileUploadPage() {
 
       }
 
-      if (accepted.length > 0) {
-        await uploadSessionImagesPrepared(token, accepted, 'mobile', {
-          sessionImages: session?.images,
-          onProgress: ({ phase, current, total }) => {
-            const action = phase === 'compress' ? 'Preparing' : 'Uploading';
-            setProgress(
-              total > 1 ? `${action} photo ${current} of ${total}…` : `${action} photos…`,
-            );
-          },
-        });
-
-        await refresh();
-
+      if (accepted.length === 0) {
+        setError(`Batch is full — maximum ${maxImages} images.`);
+        return;
       }
+
+      await uploadSessionImagesPrepared(token, accepted, 'mobile', {
+        sessionImages: session?.images,
+        onProgress: ({ phase, current, total }) => {
+          const action = phase === 'compress' ? 'Preparing' : 'Uploading';
+          setProgress(
+            total > 1 ? `${action} photo ${current} of ${total}…` : `${action} photos…`,
+          );
+        },
+      });
+
+      await refresh();
 
       navigate(`/scan/${token}/done`);
 

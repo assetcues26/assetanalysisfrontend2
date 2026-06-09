@@ -53,10 +53,10 @@ export function useMobileCaptureUpload({
         queueRef.current.shift();
         setQueueLength(queueRef.current.length);
       } catch (err) {
+        // Drop the failed capture but keep syncing the rest of the queue.
         queueRef.current.shift();
         setQueueLength(queueRef.current.length);
         showToast?.(err?.message || 'Upload failed', 'error');
-        break;
       }
     }
 

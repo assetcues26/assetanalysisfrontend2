@@ -5,8 +5,18 @@ import {
 import { formatApiErrorMessage } from '../utils/apiErrorMessage';
 
 const DEFAULT_LOCALE = 'en';
+const ANALYZE_TIMEOUT_MS = 90_000;
 
 let activeLocalAnalyzeController = null;
+
+function analysisHeaders() {
+  const headers = {};
+  const demoKey = import.meta.env.VITE_DEMO_API_KEY?.trim();
+  if (demoKey) {
+    headers['X-Demo-Key'] = demoKey;
+  }
+  return headers;
+}
 
 export function abortActiveLocalAnalyze() {
   if (activeLocalAnalyzeController) {
@@ -50,9 +60,12 @@ export async function analyzeAssetsOnServer(images, processingMode, options = {}
   formData.append('locale', locale);
   formData.append('processing_mode', processingMode);
 
+  const timeoutId = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
+
   try {
     const response = await fetch(url, {
       method: 'POST',
+      headers: analysisHeaders(),
       body: formData,
       signal,
     });
@@ -85,6 +98,7 @@ export async function analyzeAssetsOnServer(images, processingMode, options = {}
     }
     throw err;
   } finally {
+    clearTimeout(timeoutId);
     if (activeLocalAnalyzeController === controller) {
       activeLocalAnalyzeController = null;
     }
