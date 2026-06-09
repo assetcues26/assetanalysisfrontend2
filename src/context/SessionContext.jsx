@@ -83,7 +83,13 @@ export function SessionProvider({ children }) {
       if (isSessionUnavailableError(err)) {
         setEnabled(false);
       }
-      showToast(err?.message || 'Could not start phone session', 'error');
+      const msg = err?.message || '';
+      showToast(
+        msg.includes('Failed to fetch')
+          ? 'Cannot reach the API — check VITE_ASSET_ANALYSIS_API_BASE on Vercel and redeploy frontend'
+          : msg || 'Could not start phone session',
+        'error',
+      );
       return null;
     } finally {
       setLoading(false);
