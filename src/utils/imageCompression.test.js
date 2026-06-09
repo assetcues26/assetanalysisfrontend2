@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  MOBILE_MAX_FILE_BYTES,
   UPLOAD_MAX_TOTAL_MB,
   prepareImagesForUpload,
   sumSessionImageBytes,
@@ -48,6 +49,15 @@ describe('imageCompression', () => {
     await expect(
       prepareImagesForUpload(files, { existingBytes }),
     ).rejects.toThrow(/15 MB/);
+  });
+
+  it('compresses mobile uploads to 500KB per file', async () => {
+    const files = [
+      new File([new Uint8Array(4 * 1024 * 1024)], 'phone.jpg', { type: 'image/jpeg' }),
+    ];
+    const prepared = await prepareImagesForUpload(files, { mobile: true });
+    expect(prepared).toHaveLength(1);
+    expect(prepared[0].size).toBeLessThanOrEqual(MOBILE_MAX_FILE_BYTES);
   });
 
   it('sums session image byte sizes', () => {

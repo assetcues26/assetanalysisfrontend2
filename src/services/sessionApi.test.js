@@ -30,7 +30,11 @@ describe('sessionApi uploadSessionImagesPrepared', () => {
       sessionImages: [],
     });
 
-    expect(prepareImagesForUpload).toHaveBeenCalledWith(file, { existingBytes: 0 });
+    expect(prepareImagesForUpload).toHaveBeenCalledWith([file], {
+      existingBytes: 0,
+      mobile: true,
+      fast: true,
+    });
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/v1/sessions/'),
       expect.objectContaining({ method: 'POST' }),
