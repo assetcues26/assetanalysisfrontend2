@@ -54,7 +54,9 @@ export function MobileScanLandingPage() {
               <Camera size={24} />
             </div>
             <h2 className="mt-3 text-lg font-bold text-gray-900">Take photo</h2>
-            <p className="mt-1 text-sm text-gray-600">Use your phone camera, one angle at a time.</p>
+            <p className="mt-1 text-sm text-gray-600">
+              Snap one photo at a time — each adds to the batch on your laptop automatically.
+            </p>
           </Card>
 
           <Card

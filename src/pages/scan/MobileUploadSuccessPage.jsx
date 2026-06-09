@@ -35,8 +35,11 @@ export function MobileUploadSuccessPage() {
           >
             Analyze on another device
           </Button>
+          <Button variant="ghost" className="w-full" onClick={() => navigate(`/scan/${token}/capture`)}>
+            Take more photos
+          </Button>
           <Button variant="ghost" className="w-full" onClick={() => navigate(`/scan/${token}`)}>
-            Add more photos
+            Back to options
           </Button>
         </div>
       </PageWrapper>
