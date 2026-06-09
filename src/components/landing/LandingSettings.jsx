@@ -135,7 +135,10 @@ export function LandingSettings() {
               variant="destructive"
               size="sm"
               className="w-full"
-              onClick={() => setConfirmClear(true)}
+              onClick={() => {
+                setOpen(false);
+                setConfirmClear(true);
+              }}
             >
               <Database size={16} aria-hidden />
               Clear database
@@ -166,6 +169,7 @@ export function LandingSettings() {
         description="This deletes every saved analysis, capture session, and stored image for the demo account. Database tables stay intact. You cannot undo this."
         confirmLabel={clearing ? 'Clearing…' : 'Clear database'}
         cancelLabel="Keep data"
+        confirmDisabled={clearing}
         onConfirm={handleClearDatabase}
         onCancel={() => !clearing && setConfirmClear(false)}
       />
