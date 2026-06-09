@@ -31,7 +31,7 @@ export function MobileUploadPage() {
   const { maxImages, imageCount, canAdd, refresh } = useMobileSession(token);
 
   const [uploading, setUploading] = useState(false);
-
+  const [progress, setProgress] = useState(null);
   const [error, setError] = useState(null);
 
 
@@ -41,7 +41,7 @@ export function MobileUploadPage() {
     if (!files.length || !token || !canAdd) return;
 
     setUploading(true);
-
+    setProgress(null);
     setError(null);
 
     try {
@@ -67,9 +67,13 @@ export function MobileUploadPage() {
         const session = await fetchCaptureSession(token);
 
         await uploadSessionImagesPrepared(token, accepted, 'mobile', {
-
           sessionImages: session.images,
-
+          onProgress: ({ phase, current, total }) => {
+            const action = phase === 'compress' ? 'Preparing' : 'Uploading';
+            setProgress(
+              total > 1 ? `${action} photo ${current} of ${total}…` : `${action} photos…`,
+            );
+          },
         });
 
         await refresh();
@@ -127,9 +131,9 @@ export function MobileUploadPage() {
         />
 
         {uploading && (
-
-          <p className="mt-4 text-center text-sm text-gray-600">Compressing and uploading…</p>
-
+          <p className="mt-4 text-center text-sm text-gray-600">
+            {progress || 'Preparing photos…'}
+          </p>
         )}
 
         {error && (

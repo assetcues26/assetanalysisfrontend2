@@ -14,6 +14,8 @@ import { useApp } from '../../context/AppContext';
 
 import { UPLOAD_MAX_TOTAL_MB } from '../../utils/imageCompression';
 
+import { QrCodePlaceholder } from './QrCodePlaceholder';
+
 
 
 /**
@@ -134,18 +136,19 @@ export function AddFromPhonePanel({ variant = 'full', autoStart = false }) {
 
           </div>
 
-          {isSessionActive && qrDataUrl && (
-
+          {qrDataUrl ? (
             <img
-
               src={qrDataUrl}
-
               alt="QR code to open mobile capture page"
-
               className="h-[100px] w-[100px] rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
-
             />
-
+          ) : (
+            <QrCodePlaceholder
+              size={100}
+              onClick={handleConnect}
+              loading={loading}
+              label="Generate QR"
+            />
           )}
 
         </div>
@@ -239,51 +242,20 @@ export function AddFromPhonePanel({ variant = 'full', autoStart = false }) {
 
 
         <div className="flex shrink-0 items-center justify-center">
-
-          {loading && !qrDataUrl ? (
-
-            <div className="flex h-[180px] w-[180px] items-center justify-center rounded-xl border border-dashed border-gray-200 bg-gray-50 text-xs text-gray-500">
-
-              Generating QR…
-
-            </div>
-
-          ) : qrDataUrl ? (
-
+          {qrDataUrl ? (
             <img
-
               src={qrDataUrl}
-
               alt="QR code to open mobile capture page"
-
               className="h-[180px] w-[180px] rounded-xl border border-gray-100 bg-white p-3 shadow-md"
-
             />
-
           ) : (
-
-            <div className="flex h-[180px] w-[180px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 text-center text-xs text-gray-500">
-
-              <span>QR unavailable</span>
-
-              <button
-
-                type="button"
-
-                onClick={handleConnect}
-
-                className="font-semibold text-blue-600 hover:text-blue-700"
-
-              >
-
-                Connect Mobile Device →
-
-              </button>
-
-            </div>
-
+            <QrCodePlaceholder
+              size={180}
+              onClick={handleConnect}
+              loading={loading}
+              label="Click to generate QR"
+            />
           )}
-
         </div>
 
       </div>

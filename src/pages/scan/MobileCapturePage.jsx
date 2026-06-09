@@ -40,7 +40,15 @@ export function MobileCapturePage() {
         right={<ProgressPill current={imageCount} max={maxImages} variant="dark" />}
       />
       <div className="relative flex flex-1 flex-col">
-        <CameraView camera={camera} />
+        <CameraView
+          videoRef={camera.videoRef}
+          facingMode={camera.facingMode}
+          zoomLevel={camera.previewZoom}
+          status={camera.status}
+          error={camera.error}
+          onRetry={camera.retry}
+          className="min-h-0 flex-1 rounded-none border-0"
+        />
         <div className="absolute bottom-8 left-0 right-0 flex justify-center pb-safe">
           <ShutterButton onClick={handleCapture} disabled={!camera.isReady || capturing} />
         </div>

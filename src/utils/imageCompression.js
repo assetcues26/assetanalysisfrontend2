@@ -5,6 +5,11 @@ export const UPLOAD_MAX_IMAGES = 10;
 
 const BYTES_PER_MB = 1024 * 1024;
 
+function isMobileDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 /**
  * @param {number} bytes
  */
@@ -65,7 +70,7 @@ export async function compressImage(file, overrides = {}) {
  * @param {number} maxTotalBytes
  * @param {number} existingBytes
  */
-async function compressWithBudget(files, maxTotalBytes, existingBytes) {
+async function compressWithBudget(files, maxTotalBytes, existingBytes, options = {}) {
   const budget = Math.max(0, maxTotalBytes - existingBytes);
   if (budget <= 0) {
     throw new Error(
@@ -73,18 +78,28 @@ async function compressWithBudget(files, maxTotalBytes, existingBytes) {
     );
   }
 
-  const perFileMb = Math.min(1.5, budget / BYTES_PER_MB / Math.max(files.length, 1));
-  let maxEdge = 1920;
+  const fast = options.fast ?? false;
+  const perFileMb = Math.min(fast ? 1.2 : 1.5, budget / BYTES_PER_MB / Math.max(files.length, 1));
+  let maxEdge = fast ? 1600 : 1920;
+  const maxRounds = fast ? 2 : 6;
+  const useWebWorker = !fast;
 
-  for (let round = 0; round < 6; round += 1) {
-    const compressed = await Promise.all(
-      files.map((file) =>
-        compressImage(file, {
+  for (let round = 0; round < maxRounds; round += 1) {
+    const compressed = [];
+    for (const file of files) {
+      const perFileCap = Math.max(0.05, perFileMb) * BYTES_PER_MB;
+      if (fast && file.size <= perFileCap) {
+        compressed.push(file);
+        continue;
+      }
+      compressed.push(
+        await compressImage(file, {
           maxSizeMB: Math.max(0.05, perFileMb),
           maxWidthOrHeight: maxEdge,
+          useWebWorker,
         }),
-      ),
-    );
+      );
+    }
 
     const total = compressed.reduce((sum, f) => sum + f.size, 0);
     if (total + existingBytes <= maxTotalBytes) {
@@ -119,7 +134,8 @@ export async function prepareImagesForUpload(input, options = {}) {
     throw new Error(`Maximum ${UPLOAD_MAX_IMAGES} images per batch`);
   }
 
-  return compressWithBudget(files, maxTotalBytes, existingBytes);
+  const fast = options.fast ?? isMobileDevice();
+  return compressWithBudget(files, maxTotalBytes, existingBytes, { fast });
 }
 
 /**

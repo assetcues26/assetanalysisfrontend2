@@ -8,7 +8,12 @@ import { prepareImagesForUpload, sumSessionImageBytes } from '../utils/imageComp
 
 const SESSIONS_BASE = `${ASSET_ANALYSIS_API_BASE}/v1/sessions`;
 
+const UPLOAD_TIMEOUT_MS = 90_000;
 
+function isMobileDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
 
 function sessionHeaders() {
 
@@ -125,41 +130,40 @@ export async function fetchCaptureSession(token) {
  */
 
 export async function uploadSessionImages(token, files, source = 'mobile') {
-
   const list = Array.isArray(files) ? files : [files];
-
   const formData = new FormData();
 
   for (const file of list) {
-
     formData.append('images', file, file.name || 'image.jpg');
-
   }
-
   formData.append('source', source);
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), UPLOAD_TIMEOUT_MS);
 
-
-  const response = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(token)}/images`, {
-
-    method: 'POST',
-
-    headers: sessionHeaders(),
-
-    body: formData,
-
-  });
-
-  const data = await parseJsonResponse(response);
-
-  if (!response.ok) {
-
-    throw new Error(formatApiErrorMessage(data, response.status));
-
+  try {
+    const response = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(token)}/images`, {
+      method: 'POST',
+      headers: sessionHeaders(),
+      body: formData,
+      signal: controller.signal,
+    });
+    const data = await parseJsonResponse(response);
+    if (!response.ok) {
+      throw new Error(formatApiErrorMessage(data, response.status));
+    }
+    return data;
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Upload timed out — try fewer photos or a stronger connection.');
+    }
+    if (err?.name === 'TypeError') {
+      throw new Error('Network error — check your connection and try again.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return data;
-
 }
 
 
@@ -181,15 +185,30 @@ export async function uploadSessionImages(token, files, source = 'mobile') {
  */
 
 export async function uploadSessionImagesPrepared(token, files, source = 'mobile', options = {}) {
+  const list = Array.isArray(files) ? files : [files];
+  const sequential = options.sequential ?? (source === 'mobile' && isMobileDevice());
+  const onProgress = options.onProgress;
+  let existingBytes = options.existingBytes ?? sumSessionImageBytes(options.sessionImages);
 
-  const existingBytes =
+  if (!sequential || list.length <= 1) {
+    onProgress?.({ phase: 'compress', current: 1, total: 1 });
+    const prepared = await prepareImagesForUpload(list, {
+      existingBytes,
+      fast: options.fast ?? source === 'mobile',
+    });
+    onProgress?.({ phase: 'upload', current: 1, total: 1 });
+    return uploadSessionImages(token, prepared, source);
+  }
 
-    options.existingBytes ?? sumSessionImageBytes(options.sessionImages);
-
-  const prepared = await prepareImagesForUpload(files, { existingBytes });
-
-  return uploadSessionImages(token, prepared, source);
-
+  let lastResult;
+  for (let i = 0; i < list.length; i += 1) {
+    onProgress?.({ phase: 'compress', current: i + 1, total: list.length });
+    const prepared = await prepareImagesForUpload(list[i], { existingBytes, fast: true });
+    onProgress?.({ phase: 'upload', current: i + 1, total: list.length });
+    lastResult = await uploadSessionImages(token, prepared, source);
+    existingBytes += prepared.reduce((sum, file) => sum + file.size, 0);
+  }
+  return lastResult;
 }
 
 

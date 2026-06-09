@@ -36,11 +36,23 @@
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
     max-width: 100%;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
   }
 
   body {
     overflow-x: hidden;
     max-width: 100%;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  body::-webkit-scrollbar {
+    display: none;
   }
 
   #root {
@@ -70,6 +82,15 @@
 
   .touch-manipulation {
     touch-action: manipulation;
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
   }
 
 }
