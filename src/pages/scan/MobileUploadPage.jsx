@@ -16,7 +16,7 @@ import { useMobileSession } from '../../hooks/useMobileSession';
 
 import { uploadSessionImagesPrepared } from '../../services/sessionApi';
 
-import { UPLOAD_MAX_TOTAL_MB } from '../../utils/imageCompression';
+import { MOBILE_MAX_FILE_KB, UPLOAD_MAX_TOTAL_MB } from '../../utils/imageCompression';
 
 
 
@@ -117,7 +117,7 @@ export function MobileUploadPage() {
 
           title="Click to upload or drag and drop"
 
-          subtitle={`JPEG, PNG, or WebP (max ${maxImages} images, ${UPLOAD_MAX_TOTAL_MB} MB total)`}
+          subtitle={`JPEG, PNG, or WebP (max ${maxImages} images, ${MOBILE_MAX_FILE_KB}KB each, ${UPLOAD_MAX_TOTAL_MB} MB total)`}
 
           browseLabel="Browse Files"
 

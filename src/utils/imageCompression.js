@@ -2,6 +2,9 @@ import imageCompression from 'browser-image-compression';
 
 export const UPLOAD_MAX_TOTAL_MB = 15;
 export const UPLOAD_MAX_IMAGES = 10;
+/** Mobile session uploads: compress each image to this size before upload. */
+export const MOBILE_MAX_FILE_KB = 500;
+export const MOBILE_MAX_FILE_BYTES = MOBILE_MAX_FILE_KB * 1024;
 
 const BYTES_PER_MB = 1024 * 1024;
 
@@ -66,6 +69,56 @@ export async function compressImage(file, overrides = {}) {
 }
 
 /**
+ * Mobile-only: compress each file to ≤500KB before session upload.
+ * @param {File} file
+ * @returns {Promise<File>}
+ */
+async function compressToMobileCap(file) {
+  if (file.size <= MOBILE_MAX_FILE_BYTES) {
+    return file;
+  }
+
+  let maxEdge = 1600;
+  let maxSizeMB = MOBILE_MAX_FILE_BYTES / BYTES_PER_MB;
+
+  for (let round = 0; round < 5; round += 1) {
+    const compressed = await compressImage(file, {
+      maxSizeMB,
+      maxWidthOrHeight: maxEdge,
+      useWebWorker: false,
+    });
+    if (compressed.size <= MOBILE_MAX_FILE_BYTES) {
+      return compressed;
+    }
+    maxEdge = Math.round(maxEdge * 0.75);
+    maxSizeMB = Math.max(0.08, maxSizeMB * 0.7);
+  }
+
+  throw new Error(
+    `Could not compress "${file.name}" under ${MOBILE_MAX_FILE_KB}KB. Try a smaller photo.`,
+  );
+}
+
+/**
+ * @param {File[]} files
+ * @param {number} maxTotalBytes
+ * @param {number} existingBytes
+ */
+async function compressMobileBatch(files, maxTotalBytes, existingBytes) {
+  const compressed = [];
+  for (const file of files) {
+    compressed.push(await compressToMobileCap(file));
+  }
+  const total = compressed.reduce((sum, f) => sum + f.size, 0);
+  if (total + existingBytes > maxTotalBytes) {
+    throw new Error(
+      `Images are too large — keep total upload under ${UPLOAD_MAX_TOTAL_MB} MB (max ${UPLOAD_MAX_IMAGES} images).`,
+    );
+  }
+  return compressed;
+}
+
+/**
  * @param {File[]} files
  * @param {number} maxTotalBytes
  * @param {number} existingBytes
@@ -119,7 +172,7 @@ async function compressWithBudget(files, maxTotalBytes, existingBytes, options =
  * Prepare files for session/API upload with per-batch size budget.
  *
  * @param {File | File[]} input
- * @param {{ maxTotalMB?: number, existingBytes?: number }} [options]
+ * @param {{ maxTotalMB?: number, existingBytes?: number, mobile?: boolean }} [options]
  * @returns {Promise<File[]>}
  */
 export async function prepareImagesForUpload(input, options = {}) {
@@ -135,8 +188,22 @@ export async function prepareImagesForUpload(input, options = {}) {
     throw new Error(`Maximum ${UPLOAD_MAX_IMAGES} images per batch`);
   }
 
+  if (options.mobile) {
+    return compressMobileBatch(files, maxTotalBytes, existingBytes);
+  }
+
   const fast = options.fast ?? isMobileDevice();
   return compressWithBudget(files, maxTotalBytes, existingBytes, { fast });
+}
+
+/**
+ * Compress a single file for mobile session upload (≤500KB).
+ * @param {File} file
+ * @returns {Promise<File>}
+ */
+export async function prepareMobileImageForUpload(file) {
+  const [prepared] = await compressMobileBatch([file], UPLOAD_MAX_TOTAL_MB * BYTES_PER_MB, 0);
+  return prepared;
 }
 
 /**

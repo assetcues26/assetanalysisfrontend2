@@ -204,6 +204,7 @@ export async function uploadSessionImagesPrepared(token, files, source = 'mobile
     onProgress?.({ phase: 'compress', current: 1, total: 1 });
     const prepared = await prepareImagesForUpload(list, {
       existingBytes,
+      mobile: source === 'mobile',
       fast: options.fast ?? source === 'mobile',
     });
     onProgress?.({ phase: 'upload', current: 1, total: 1 });
@@ -213,7 +214,7 @@ export async function uploadSessionImagesPrepared(token, files, source = 'mobile
   onProgress?.({ phase: 'compress', current: 0, total: list.length });
   const prepared = [];
   for (let i = 0; i < list.length; i += 1) {
-    const batch = await prepareImagesForUpload(list[i], { existingBytes, fast: true });
+    const batch = await prepareImagesForUpload(list[i], { existingBytes, mobile: true });
     prepared.push(batch[0]);
     existingBytes += batch[0].size;
     onProgress?.({ phase: 'compress', current: i + 1, total: list.length });
