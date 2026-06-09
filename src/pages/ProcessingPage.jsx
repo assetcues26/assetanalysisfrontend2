@@ -271,11 +271,11 @@ export function ProcessingPage() {
 
   return (
     <HeroSection className="min-h-screen">
-      <div className="relative flex min-h-screen flex-col items-center justify-center px-6 py-16">
+      <div className="flex min-h-screen flex-col px-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 flex flex-col items-center"
+          className="flex flex-1 flex-col items-center justify-center py-8"
         >
           <ProcessingAnimation />
           <p className="mt-6 text-center text-sm text-gray-600">
@@ -284,7 +284,10 @@ export function ProcessingPage() {
           <div className="mt-10 w-full max-w-md">
             <StatusCycler />
           </div>
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        </motion.div>
+
+        <div className="mx-auto w-full max-w-md shrink-0 pb-8 pb-safe">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Button
               variant="outline"
               disabled={cancelling}
@@ -302,9 +305,6 @@ export function ProcessingPage() {
               </Button>
             )}
           </div>
-        </motion.div>
-
-        <div className="absolute bottom-16 left-6 right-6 z-10 mx-auto max-w-2xl">
           <ShimmerProgressBar />
         </div>
       </div>

@@ -47,11 +47,11 @@ export function MobileProcessingPage() {
 
   return (
     <HeroSection className="min-h-[100dvh]">
-      <div className="relative flex min-h-[100dvh] flex-col items-center justify-center px-6 py-16">
+      <div className="flex min-h-[100dvh] flex-col px-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 flex flex-col items-center"
+          className="flex flex-1 flex-col items-center justify-center py-8"
         >
           <ProcessingAnimation />
           <p className="mt-6 text-center text-sm text-gray-600">
@@ -65,7 +65,10 @@ export function MobileProcessingPage() {
           <div className="mt-10 w-full max-w-md">
             <StatusCycler />
           </div>
-          <div className="mt-8 flex w-full max-w-sm flex-col gap-3">
+        </motion.div>
+
+        <div className="mx-auto w-full max-w-sm shrink-0 pb-8 pb-safe">
+          <div className="mb-5 flex flex-col gap-3">
             <Button
               variant="outline"
               disabled={cancelling}
@@ -81,8 +84,6 @@ export function MobileProcessingPage() {
               Cancel & clear images
             </Button>
           </div>
-        </motion.div>
-        <div className="absolute bottom-16 left-6 right-6 z-10 mx-auto max-w-2xl">
           <ShimmerProgressBar />
         </div>
       </div>
