@@ -58,6 +58,7 @@ export function ProcessingPage() {
   const sawAnalyzingRef = useRef(false);
   const analyzingSinceRef = useRef(null);
   const pollStoppedRef = useRef(false);
+  const analyzingRef = useRef(false);
 
   const batchKey = useMemo(
     () => batchImages.map((img) => img.id).sort().join('|'),
@@ -69,7 +70,25 @@ export function ProcessingPage() {
     [batchImages],
   );
 
-  const analyzableCount = readyImages.length;
+  // Phone images synced via capture session — downloadable from signed URLs.
+  const remoteImages = useMemo(
+    () =>
+      batchImages.filter(
+        (img) => !(img.file instanceof File) && img.isRemote && img.previewUrl,
+      ),
+    [batchImages],
+  );
+
+  // Refs so the analyze effect reads the latest arrays without re-running when
+  // session polling replaces array identities every second.
+  const readyImagesRef = useRef(readyImages);
+  readyImagesRef.current = readyImages;
+  const remoteImagesRef = useRef(remoteImages);
+  remoteImagesRef.current = remoteImages;
+  const sessionCountRef = useRef(sessionCount);
+  sessionCountRef.current = sessionCount;
+
+  const analyzableCount = readyImages.length + remoteImages.length;
 
   const handleCancel = useCallback(
     async ({ clearImages = false } = {}) => {
@@ -103,6 +122,15 @@ export function ProcessingPage() {
     }
   }, [sessionToken, attachToken]);
 
+  // Abort any in-flight local analysis only when leaving the page.
+  useEffect(
+    () => () => {
+      runIdRef.current += 1;
+      abortActiveLocalAnalyze();
+    },
+    [],
+  );
+
   useEffect(() => {
     if (!sessionToken) return undefined;
 
@@ -114,8 +142,8 @@ export function ProcessingPage() {
     sawAnalyzingRef.current = false;
     analyzingSinceRef.current = null;
     setSessionPollReady(false);
-    if (sessionCount > 0) {
-      setSessionImageCount(sessionCount);
+    if (sessionCountRef.current > 0) {
+      setSessionImageCount(sessionCountRef.current);
     }
 
     const poll = async () => {
@@ -172,13 +200,13 @@ export function ProcessingPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [sessionToken, sessionCount, navigate, clearBatch, clearSession, setAnalysisError]);
+  }, [sessionToken, navigate, clearBatch, clearSession, setAnalysisError]);
 
   useEffect(() => {
     if (sessionToken) return undefined;
 
     if (batchCount === 0) {
-      if (!isAnalyzing && !completedRef.current) {
+      if (!analyzingRef.current && !completedRef.current) {
         navigate('/', { replace: true });
       }
       return undefined;
@@ -190,18 +218,43 @@ export function ProcessingPage() {
       return undefined;
     }
 
+    // Start one analysis per unique batch; never restart for identity-only
+    // changes (session polling) or isAnalyzing/error state flips.
     if (startedBatchKeyRef.current === batchKey) return undefined;
     startedBatchKeyRef.current = batchKey;
 
     const runId = ++runIdRef.current;
     setAnalysisError(null);
     setIsAnalyzing(true);
+    analyzingRef.current = true;
     completedRef.current = false;
 
-    withTimeout(
-      analyzeImages(readyImages, { processingMode: uploadProcessingMode }),
-      ANALYSIS_TIMEOUT_MS,
-    )
+    const materializeAndAnalyze = async () => {
+      const locals = readyImagesRef.current;
+      const remotes = remoteImagesRef.current;
+      const downloaded = await Promise.all(
+        remotes.map(async (img, i) => {
+          const response = await fetch(img.previewUrl);
+          if (!response.ok) {
+            throw new Error('Could not load a phone image — go back and try again.');
+          }
+          const blob = await response.blob();
+          return {
+            id: img.id,
+            previewUrl: img.previewUrl,
+            name: img.name || `phone_${i + 1}.jpg`,
+            file: new File([blob], img.name || `phone_${i + 1}.jpg`, {
+              type: blob.type || 'image/jpeg',
+            }),
+          };
+        }),
+      );
+      return analyzeImages([...locals, ...downloaded], {
+        processingMode: uploadProcessingMode,
+      });
+    };
+
+    withTimeout(materializeAndAnalyze(), ANALYSIS_TIMEOUT_MS)
       .then(async (result) => {
         if (runId !== runIdRef.current) return;
         const entry = await addEntry({
@@ -211,8 +264,11 @@ export function ProcessingPage() {
         });
         setLastResult(entry);
         setAnalysisError(null);
-        clearBatch();
         completedRef.current = true;
+        clearBatch();
+        if (remoteImagesRef.current.length > 0) {
+          clearSession();
+        }
         navigate(`/result/${entry.id}`, { replace: true });
       })
       .catch((err) => {
@@ -222,26 +278,23 @@ export function ProcessingPage() {
       .finally(() => {
         if (runId === runIdRef.current) {
           setIsAnalyzing(false);
+          analyzingRef.current = false;
         }
       });
 
-    return () => {
-      runIdRef.current += 1;
-      startedBatchKeyRef.current = null;
-    };
+    return undefined;
   }, [
     sessionToken,
     batchKey,
     analyzableCount,
-    readyImages,
+    batchCount,
     uploadProcessingMode,
     addEntry,
     setLastResult,
     setAnalysisError,
     clearBatch,
+    clearSession,
     navigate,
-    batchCount,
-    isAnalyzing,
   ]);
 
   const displayCount = sessionToken ? sessionImageCount : analyzableCount;

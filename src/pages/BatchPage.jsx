@@ -22,12 +22,8 @@ export function BatchPage() {
     batchCount,
     removeImage,
     maxImages,
-    hasLocalFiles,
-    hasSessionImages,
-    clearBatch,
   } = useMergedBatch();
-  const { isSessionActive, isSessionAnalyzing, token, startAnalyze, uploadImage, cancelAnalysis } =
-    useSession();
+  const { isSessionAnalyzing, cancelAnalysis } = useSession();
   const [proceeding, setProceeding] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -153,44 +149,14 @@ export function BatchPage() {
           label="Proceed to Analysis"
           count={batchCount}
           disabled={batchCount === 0 || proceeding}
-          onClick={async () => {
+          onClick={() => {
             setLastResult(null);
             setAnalysisError(null);
             setProceeding(true);
-            try {
-              // Session analyze only when phone images exist — laptop-only uses fast direct API.
-              if (isSessionActive && token && hasSessionImages) {
-                if (hasLocalFiles) {
-                  const files = batchImages
-                    .filter((img) => img.file instanceof File)
-                    .map((img) => img.file);
-                  if (files.length > 0) {
-                    const updated = await uploadImage(files, 'laptop');
-                    if (!updated) return;
-                    clearBatch();
-                  }
-                }
-                const result = await startAnalyze();
-                if (result?.status === 'completed' && result.entry_id) {
-                  navigate(`/result/${result.entry_id}`, { replace: true });
-                  return;
-                }
-                if (
-                  result &&
-                  (result.status === 'analyzing' || result.status === 'completed')
-                ) {
-                  navigate(`/processing?session=${encodeURIComponent(token)}`);
-                }
-                return;
-              }
-              if (hasLocalFiles) {
-                navigate('/processing');
-                return;
-              }
-              navigate('/processing');
-            } finally {
-              setProceeding(false);
-            }
+            // Always use the fast direct analyze path — phone images are
+            // downloaded from their signed URLs on the processing page.
+            navigate('/processing');
+            setProceeding(false);
           }}
         />
       </div>

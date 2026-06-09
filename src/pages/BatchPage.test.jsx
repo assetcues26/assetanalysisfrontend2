@@ -41,33 +41,21 @@ vi.mock('../hooks/useSession', () => ({
   }),
 }));
 
-describe('BatchPage session analyze', () => {
+describe('BatchPage proceed', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('does not navigate to processing when analyze fails', async () => {
-    mockStartAnalyze.mockResolvedValueOnce(null);
+  it('always uses the fast direct processing path', async () => {
     const user = userEvent.setup();
     renderWithProviders(<BatchPage />, { route: '/batch' });
 
     await user.click(screen.getByRole('button', { name: /Proceed to Analysis/i }));
 
-    expect(mockStartAnalyze).toHaveBeenCalled();
+    expect(mockNavigate).toHaveBeenCalledWith('/processing');
+    expect(mockStartAnalyze).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalledWith(
       expect.stringContaining('/processing?session='),
-    );
-  });
-
-  it('navigates to processing when analyze starts', async () => {
-    mockStartAnalyze.mockResolvedValueOnce({ status: 'analyzing' });
-    const user = userEvent.setup();
-    renderWithProviders(<BatchPage />, { route: '/batch' });
-
-    await user.click(screen.getByRole('button', { name: /Proceed to Analysis/i }));
-
-    expect(mockNavigate).toHaveBeenCalledWith(
-      '/processing?session=session-token-abcdefghijklmnopqrstuvwxyz',
     );
   });
 });
