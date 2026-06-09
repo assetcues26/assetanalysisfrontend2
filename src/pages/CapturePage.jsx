@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SwitchCamera } from 'lucide-react';
+import { Images, SwitchCamera } from 'lucide-react';
 import { CompactHeader, ProgressPill } from '../components/layout/AppHeader';
 import { BrandLogo } from '../components/layout/BrandLogo';
 import { BackButton } from '../components/ui/BackButton';
@@ -11,15 +11,25 @@ import { CameraView } from '../components/capture/CameraView';
 import { ShutterButton } from '../components/capture/ShutterButton';
 import { FlashToggle } from '../components/capture/FlashToggle';
 import { BatchTray } from '../components/batch/BatchTray';
+import { LiveBatchPanel } from '../components/batch/LiveBatchPanel';
 import { useCamera } from '../hooks/useCamera';
 import { useMergedBatch } from '../hooks/useMergedBatch';
+import { usePhoneBatchPanel } from '../hooks/usePhoneBatchPanel';
 import { useApp } from '../context/AppContext';
 import { AddFromPhonePanel } from '../components/session/AddFromPhonePanel';
 
 export function CapturePage() {
   const navigate = useNavigate();
   const { maxImages, setPreviewImage, showToast } = useApp();
-  const { batchImages, batchCount, removeImage, canAddMore } = useMergedBatch();
+  const {
+    batchImages,
+    batchCount,
+    removeImage,
+    canAddMore,
+    hasSessionImages,
+    sessionImageCount,
+  } = useMergedBatch();
+  const { open: batchPanelOpen, openPanel, closePanel } = usePhoneBatchPanel(sessionImageCount);
   const camera = useCamera();
   const cameraApiRef = useRef(camera);
   cameraApiRef.current = camera;
@@ -144,6 +154,27 @@ export function CapturePage() {
           />
         </div>
       </div>
+
+      <LiveBatchPanel
+        open={batchPanelOpen}
+        onClose={closePanel}
+        images={batchImages}
+        maxImages={maxImages}
+        onRemove={removeImage}
+        onProceed={() => navigate('/batch')}
+        sessionImageCount={sessionImageCount}
+      />
+
+      {hasSessionImages && batchCount > 0 && !batchPanelOpen && (
+        <button
+          type="button"
+          onClick={openPanel}
+          className="fixed bottom-[21rem] right-4 z-50 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 sm:bottom-[22rem]"
+        >
+          <Images size={18} aria-hidden />
+          Phone photos ({sessionImageCount})
+        </button>
+      )}
 
       <ConfirmModal
         open={leaveConfirm}

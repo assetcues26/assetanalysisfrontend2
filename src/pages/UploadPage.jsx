@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { AnimatePresence } from 'framer-motion';
 
-import { FileImage } from 'lucide-react';
+import { FileImage, Images } from 'lucide-react';
 
 import { CompactHeader, ProgressPill } from '../components/layout/AppHeader';
 
@@ -14,11 +14,15 @@ import { DropZone } from '../components/upload/DropZone';
 
 import { BatchTray } from '../components/batch/BatchTray';
 
+import { LiveBatchPanel } from '../components/batch/LiveBatchPanel';
+
 import { PageWrapper } from '../components/layout/PageWrapper';
 
 import { HeroSection } from '../components/layout/HeroSection';
 
 import { useMergedBatch } from '../hooks/useMergedBatch';
+
+import { usePhoneBatchPanel } from '../hooks/usePhoneBatchPanel';
 
 import { useApp } from '../context/AppContext';
 
@@ -34,7 +38,17 @@ export function UploadPage() {
 
   const { maxImages, setPreviewImage, showToast } = useApp();
 
-  const { batchImages, batchCount, removeImage, tryAddImages, canAddMore } = useMergedBatch();
+  const {
+    batchImages,
+    batchCount,
+    removeImage,
+    tryAddImages,
+    canAddMore,
+    hasSessionImages,
+    sessionImageCount,
+  } = useMergedBatch();
+
+  const { open: batchPanelOpen, openPanel, closePanel } = usePhoneBatchPanel(sessionImageCount);
 
 
 
@@ -158,7 +172,7 @@ export function UploadPage() {
 
 
 
-          {batchCount > 0 && (
+          {batchCount > 0 && !hasSessionImages && (
 
             <section className="mt-8 rounded-2xl border border-gray-200 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
 
@@ -193,6 +207,48 @@ export function UploadPage() {
         </PageWrapper>
 
       </HeroSection>
+
+
+
+      <LiveBatchPanel
+
+        open={batchPanelOpen}
+
+        onClose={closePanel}
+
+        images={batchImages}
+
+        maxImages={maxImages}
+
+        onRemove={removeImage}
+
+        onProceed={() => navigate('/batch')}
+
+        sessionImageCount={sessionImageCount}
+
+      />
+
+
+
+      {hasSessionImages && batchCount > 0 && !batchPanelOpen && (
+
+        <button
+
+          type="button"
+
+          onClick={openPanel}
+
+          className="fixed bottom-24 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition-transform hover:scale-[1.02] active:scale-[0.98] sm:bottom-28"
+
+        >
+
+          <Images size={18} aria-hidden />
+
+          View photos ({batchCount})
+
+        </button>
+
+      )}
 
 
 
