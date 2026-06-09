@@ -9,7 +9,7 @@ import { prepareImagesForUpload, sumSessionImageBytes } from '../utils/imageComp
 const SESSIONS_BASE = `${ASSET_ANALYSIS_API_BASE}/v1/sessions`;
 
 const UPLOAD_TIMEOUT_MS = 90_000;
-const ANALYZE_TIMEOUT_MS = 60_000;
+const ANALYZE_TIMEOUT_MS = 90_000;
 
 let activeAnalyzeController = null;
 

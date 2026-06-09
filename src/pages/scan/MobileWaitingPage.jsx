@@ -15,8 +15,8 @@ export function MobileWaitingPage() {
         <Clock className="text-indigo-500" size={48} aria-hidden />
         <h1 className="mt-4 text-xl font-bold text-gray-900">Waiting for analysis</h1>
         <p className="mt-2 max-w-sm text-sm text-gray-600">
-          Start analysis from your computer or another device. This page will update automatically
-          when processing begins.
+          On your laptop, open Batch and tap Proceed to analyze. This page updates automatically
+          when analysis starts.
         </p>
         <p className="mt-4 text-xs text-gray-500">{imageCount} image{imageCount === 1 ? '' : 's'} ready</p>
 

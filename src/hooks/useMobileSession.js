@@ -8,13 +8,15 @@ import {
 } from '../services/sessionApi';
 
 const POLL_MS = 1000;
-const ANALYZE_STALE_MS = 60_000;
+const ANALYZE_STALE_MS = 90_000;
 
 /**
  * Poll capture session on mobile routes.
  * @param {string | undefined} token
+ * @param {{ seedImageCount?: number }} [options]
  */
-export function useMobileSession(token) {
+export function useMobileSession(token, options = {}) {
+  const seedImageCount = options.seedImageCount ?? 0;
   const navigate = useNavigate();
   const location = useLocation();
   const [session, setSession] = useState(null);
@@ -37,10 +39,13 @@ export function useMobileSession(token) {
         }
         const elapsed = Date.now() - analyzingSinceRef.current;
         if (elapsed > ANALYZE_STALE_MS) {
-          setError('Analysis timed out after 60 seconds. Cancel and try again.');
+          setError('Analysis timed out after 90 seconds. Cancel and try again.');
         }
         if (!pathnameRef.current.includes('/processing')) {
-          navigate(`/scan/${token}/processing`, { replace: true });
+          navigate(`/scan/${token}/processing`, {
+            replace: true,
+            state: { imageCount: data.image_count ?? 0 },
+          });
         }
         return;
       }
@@ -119,20 +124,23 @@ export function useMobileSession(token) {
     analyzingSinceRef.current = null;
     try {
       const result = await analyzeCaptureSession(token);
-      await refresh();
+      const data = await refresh();
       if (result.status === 'completed' && result.entry_id) {
         navigate(`/result/${result.entry_id}`, { replace: true });
         return result;
       }
       if (result.status === 'analyzing' || result.status === 'completed') {
-        navigate(`/scan/${token}/processing`, { replace: true });
+        navigate(`/scan/${token}/processing`, {
+          replace: true,
+          state: { imageCount: data?.image_count ?? seedImageCount },
+        });
       }
       return result;
     } catch (err) {
       setError(err?.message || 'Analysis failed');
       return null;
     }
-  }, [token, refresh, navigate]);
+  }, [token, refresh, navigate, seedImageCount]);
 
   const cancelAnalysis = useCallback(
     async ({ clearImages = false } = {}) => {
@@ -165,7 +173,7 @@ export function useMobileSession(token) {
     startAnalyze,
     cancelAnalysis,
     isUnavailable: error && isSessionUnavailableError({ message: error }),
-    imageCount: session?.image_count ?? 0,
+    imageCount: session?.image_count ?? seedImageCount,
     maxImages: session?.max_images ?? 10,
     canAdd: session?.status === 'active',
     isAnalyzing: session?.status === 'analyzing',

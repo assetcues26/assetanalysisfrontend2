@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ProcessingAnimation,
   ShimmerProgressBar,
@@ -13,8 +13,10 @@ import { useMobileSession } from '../../hooks/useMobileSession';
 export function MobileProcessingPage() {
   const { token } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const seedImageCount = location.state?.imageCount ?? 0;
   const { session, imageCount, error, isAnalyzing, cancelling, cancelAnalysis } =
-    useMobileSession(token);
+    useMobileSession(token, { seedImageCount });
 
   if (error) {
     return (
@@ -55,9 +57,9 @@ export function MobileProcessingPage() {
         >
           <ProcessingAnimation />
           <p className="mt-6 text-center text-sm text-gray-600">
-            {isAnalyzing
-              ? `Analyzing ${imageCount} image${imageCount === 1 ? '' : 's'}…`
-              : 'Preparing analysis…'}
+            {!isAnalyzing && !session
+              ? 'Preparing analysis…'
+              : `Analyzing ${imageCount} image${imageCount === 1 ? '' : 's'}…`}
           </p>
           <p className="mt-2 text-center text-xs text-gray-500">
             Usually under a minute. Tap cancel to stop.

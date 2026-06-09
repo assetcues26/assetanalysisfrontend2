@@ -17,12 +17,12 @@ import { analyzeImages } from '../services/analysisService';
 import { abortActiveLocalAnalyze } from '../services/assetAnalysisApi';
 import { fetchCaptureSession } from '../services/sessionApi';
 
-const ANALYSIS_TIMEOUT_MS = 60_000;
+const ANALYSIS_TIMEOUT_MS = 90_000;
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error('Analysis timed out after 60 seconds. Cancel and try again.')),
+      () => reject(new Error('Analysis timed out after 90 seconds. Cancel and try again.')),
       ms,
     );
     promise
@@ -44,11 +44,14 @@ export function ProcessingPage() {
 
   const { batchImages, batchCount, clearBatch } = useMergedBatch();
   const { addEntry } = useHistory();
-  const { attachToken, clearSession, cancelAnalysis } = useSession();
+  const { attachToken, clearSession, cancelAnalysis, sessionCount } = useSession();
   const { setLastResult, setAnalysisError, analysisError, uploadProcessingMode } = useApp();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [sessionImageCount, setSessionImageCount] = useState(0);
+  const [sessionImageCount, setSessionImageCount] = useState(() =>
+    sessionToken ? sessionCount || 0 : 0,
+  );
+  const [sessionPollReady, setSessionPollReady] = useState(false);
   const runIdRef = useRef(0);
   const completedRef = useRef(false);
   const startedBatchKeyRef = useRef(null);
@@ -110,12 +113,17 @@ export function ProcessingPage() {
     completedRef.current = false;
     sawAnalyzingRef.current = false;
     analyzingSinceRef.current = null;
+    setSessionPollReady(false);
+    if (sessionCount > 0) {
+      setSessionImageCount(sessionCount);
+    }
 
     const poll = async () => {
       if (pollStoppedRef.current || cancelled) return;
       try {
         const data = await fetchCaptureSession(sessionToken);
         if (cancelled || pollStoppedRef.current) return;
+        setSessionPollReady(true);
         setSessionImageCount(data.image_count || 0);
 
         if (data.status === 'analyzing') {
@@ -123,7 +131,7 @@ export function ProcessingPage() {
           if (!analyzingSinceRef.current) {
             analyzingSinceRef.current = Date.now();
           } else if (Date.now() - analyzingSinceRef.current > ANALYSIS_TIMEOUT_MS) {
-            setAnalysisError('Analysis timed out after 60 seconds. Cancel and try again.');
+            setAnalysisError('Analysis timed out after 90 seconds. Cancel and try again.');
             setIsAnalyzing(false);
             pollStoppedRef.current = true;
           }
@@ -164,7 +172,7 @@ export function ProcessingPage() {
       cancelled = true;
       clearInterval(id);
     };
-  }, [sessionToken, navigate, clearBatch, clearSession, setAnalysisError]);
+  }, [sessionToken, sessionCount, navigate, clearBatch, clearSession, setAnalysisError]);
 
   useEffect(() => {
     if (sessionToken) return undefined;
@@ -237,6 +245,10 @@ export function ProcessingPage() {
   ]);
 
   const displayCount = sessionToken ? sessionImageCount : analyzableCount;
+  const sessionStatusText =
+    sessionToken && !sessionPollReady && displayCount === 0
+      ? 'Preparing analysis…'
+      : `Analyzing ${displayCount} image${displayCount === 1 ? '' : 's'}… Usually under a minute.`;
 
   if (!sessionToken && batchCount === 0 && !isAnalyzing && !analysisError) return null;
 
@@ -279,7 +291,7 @@ export function ProcessingPage() {
         >
           <ProcessingAnimation />
           <p className="mt-6 text-center text-sm text-gray-600">
-            Analyzing {displayCount} image{displayCount === 1 ? '' : 's'}… Usually under a minute.
+            {sessionToken ? sessionStatusText : `Analyzing ${displayCount} image${displayCount === 1 ? '' : 's'}… Usually under a minute.`}
           </p>
           <div className="mt-10 w-full max-w-md">
             <StatusCycler />

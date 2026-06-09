@@ -37,7 +37,8 @@ export function MobileScanLandingPage() {
           <LogoElementVideo className="h-24 w-24 sm:h-28 sm:w-28" />
           <h1 className="mt-4 text-2xl font-bold text-gray-900">Add asset photos</h1>
           <p className="mt-2 max-w-sm text-sm text-gray-600">
-            Capture or upload images for this asset. They will appear on your other device.
+            Capture or upload images here — they sync to your laptop batch automatically. Analyze
+            from your computer when ready.
           </p>
           <Badge variant="count" className="mt-4">
             {imageCount} / {maxImages} images
