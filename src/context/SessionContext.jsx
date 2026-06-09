@@ -76,15 +76,8 @@ export function SessionProvider({ children }) {
       setToken(activeToken);
       setSession(created);
       analysisCancelledRef.current = false;
-
-      if (batchImages.length > 0) {
-        const files = batchImages.map((img) => img.file).filter((f) => f instanceof File);
-        if (files.length > 0) {
-          const updated = await uploadSessionImagesPrepared(activeToken, files, 'laptop');
-          setSession(updated);
-        }
-        clearBatch();
-      }
+      // QR session is for phone uploads only — laptop images stay in local batch
+      // and use the fast direct analyze path (/v1/assets/analyze/*).
       return activeToken;
     } catch (err) {
       if (isSessionUnavailableError(err)) {
@@ -101,7 +94,7 @@ export function SessionProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [enabled, uploadProcessingMode, batchImages, clearBatch, showToast]);
+  }, [enabled, uploadProcessingMode, showToast]);
 
   const uploadImage = useCallback(
     async (fileOrFiles, source = 'laptop') => {
@@ -255,7 +248,11 @@ export function SessionProvider({ children }) {
         if (cancelled) return;
         setSession(data);
 
-        if (data.status === 'analyzing' && !analysisCancelledRef.current) {
+        if (
+          data.status === 'analyzing' &&
+          !analysisCancelledRef.current &&
+          (data.image_count || 0) > 0
+        ) {
           const onLaptopSyncPage = LAPTOP_SYNC_PATHS.some((p) =>
             location.pathname.startsWith(p),
           );

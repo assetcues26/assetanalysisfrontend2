@@ -158,7 +158,8 @@ export function BatchPage() {
             setAnalysisError(null);
             setProceeding(true);
             try {
-              if (isSessionActive && token && (hasSessionImages || hasLocalFiles)) {
+              // Session analyze only when phone images exist — laptop-only uses fast direct API.
+              if (isSessionActive && token && hasSessionImages) {
                 if (hasLocalFiles) {
                   const files = batchImages
                     .filter((img) => img.file instanceof File)
