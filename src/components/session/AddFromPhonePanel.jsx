@@ -143,12 +143,19 @@ export function AddFromPhonePanel({ variant = 'full', autoStart = false }) {
               className="h-[100px] w-[100px] rounded-lg border border-gray-200 bg-white p-1 shadow-sm"
             />
           ) : (
-            <QrCodePlaceholder
-              size={100}
-              onClick={handleConnect}
-              loading={loading}
-              label="Generate QR"
-            />
+            <div className="flex flex-col items-center gap-2">
+              <QrCodePlaceholder size={100} />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={loading}
+                onClick={handleConnect}
+              >
+                <QrCode size={14} aria-hidden />
+                {loading ? 'Generating…' : 'Generate QR'}
+              </Button>
+            </div>
           )}
 
         </div>
@@ -201,47 +208,21 @@ export function AddFromPhonePanel({ variant = 'full', autoStart = false }) {
 
           </p>
 
-          {!isSessionActive ? (
-
+          {isSessionActive && (
             <button
-
               type="button"
-
-              disabled={loading}
-
-              onClick={handleConnect}
-
-              className="mt-4 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700 disabled:opacity-50"
-
-            >
-
-              {loading ? 'Connecting…' : 'Connect Mobile Device →'}
-
-            </button>
-
-          ) : (
-
-            <button
-
-              type="button"
-
               onClick={handleCopy}
-
               className="mt-4 inline-flex items-center text-sm font-semibold text-blue-600 transition-colors hover:text-blue-700"
-
             >
-
               Copy mobile link →
-
             </button>
-
           )}
 
         </div>
 
 
 
-        <div className="flex shrink-0 items-center justify-center">
+        <div className="flex shrink-0 flex-col items-center justify-center gap-4">
           {qrDataUrl ? (
             <img
               src={qrDataUrl}
@@ -249,12 +230,22 @@ export function AddFromPhonePanel({ variant = 'full', autoStart = false }) {
               className="h-[180px] w-[180px] rounded-xl border border-gray-100 bg-white p-3 shadow-md"
             />
           ) : (
-            <QrCodePlaceholder
-              size={180}
-              onClick={handleConnect}
-              loading={loading}
-              label="Click to generate QR"
-            />
+            <>
+              <QrCodePlaceholder size={180} />
+              <Button
+                type="button"
+                variant="primary"
+                disabled={loading}
+                onClick={handleConnect}
+                className="min-w-[200px]"
+              >
+                <Smartphone size={18} aria-hidden />
+                {loading ? 'Generating QR…' : 'Generate QR code'}
+              </Button>
+              <p className="max-w-[200px] text-center text-xs text-gray-500">
+                Scan with your phone to add photos
+              </p>
+            </>
           )}
         </div>
 
