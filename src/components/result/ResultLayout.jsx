@@ -89,7 +89,7 @@ export function InfoRow({ label, value }) {
       <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-gray-500">
         {label}
       </span>
-      <span className="text-sm leading-relaxed text-gray-800 sm:max-w-[70%] sm:text-right">
+      <span className="min-w-0 break-words text-sm leading-relaxed text-gray-800 sm:max-w-[70%] sm:text-right">
         {value}
       </span>
     </div>
@@ -99,7 +99,7 @@ export function InfoRow({ label, value }) {
 export function ProseBlock({ children, className = '' }) {
   if (!children) return null;
   return (
-    <p className={`text-sm leading-relaxed text-gray-700 ${className}`}>{children}</p>
+    <p className={`break-words text-sm leading-relaxed text-gray-700 ${className}`}>{children}</p>
   );
 }
 
