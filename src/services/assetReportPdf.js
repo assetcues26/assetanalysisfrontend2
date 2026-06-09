@@ -721,6 +721,9 @@ function drawSectionHeader(state, section) {
 }
 
 function drawFieldRow(state, label, value, theme, rowIndex) {
+  // Set value font BEFORE splitTextToSize so jsPDF uses correct glyph widths for wrapping.
+  state.doc.setFont('helvetica', 'normal');
+  state.doc.setFontSize(8);
   const valueLines = wrapText(state.doc, value, CONTENT_WIDTH - LABEL_COL - 4);
   const lineCount = Math.min(valueLines.length, MAX_FIELD_LINES);
   const blockH = Math.max(5, lineCount * 3.8) + 3;
