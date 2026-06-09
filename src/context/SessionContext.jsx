@@ -12,11 +12,13 @@ import { CAPTURE_SESSION_ENABLED } from '../config/features';
 import { useApp } from './AppContext';
 import { useBatchContext } from './BatchContext';
 import {
+  abortActiveSessionAnalyze,
   analyzeCaptureSession,
   cancelCaptureSessionAnalysis,
   createCaptureSession,
   deleteSessionImage,
   fetchCaptureSession,
+  isSessionNotFoundError,
   isSessionUnavailableError,
   uploadSessionImagesPrepared,
 } from '../services/sessionApi';
@@ -153,27 +155,93 @@ export function SessionProvider({ children }) {
     }
   }, [token, refreshSession, showToast]);
 
+  const clearSessionImages = useCallback(
+    async (activeToken, images) => {
+      let latest = null;
+      for (const img of images || []) {
+        latest = await deleteSessionImage(activeToken, img.id);
+      }
+      return latest;
+    },
+    [deleteSessionImage],
+  );
+
   const cancelAnalysis = useCallback(
     async ({ clearImages = false } = {}) => {
-      if (!token) return null;
+      if (!token) {
+        if (clearImages) clearBatch();
+        return null;
+      }
+
       analysisCancelledRef.current = true;
-      try {
-        const updated = await cancelCaptureSessionAnalysis(token, { clearImages });
-        setSession(updated);
-        if (clearImages) {
-          clearBatch();
-        }
-        showToast(
-          clearImages ? 'Analysis cancelled and images cleared' : 'Analysis cancelled',
-          'success',
-        );
+      abortActiveSessionAnalyze();
+
+      const succeed = (updated, message) => {
+        if (updated) setSession(updated);
+        if (clearImages) clearBatch();
+        showToast(message, 'success');
         return updated;
+      };
+
+      try {
+        let current = await fetchCaptureSession(token);
+
+        if (current.status === 'active') {
+          if (clearImages && current.images?.length) {
+            current = await clearSessionImages(token, current.images);
+          }
+          return succeed(
+            current,
+            clearImages ? 'Analysis cancelled and images cleared' : 'Analysis cancelled',
+          );
+        }
+
+        const updated = await cancelCaptureSessionAnalysis(token, { clearImages });
+        return succeed(
+          updated,
+          clearImages ? 'Analysis cancelled and images cleared' : 'Analysis cancelled',
+        );
       } catch (err) {
+        try {
+          const current = await fetchCaptureSession(token);
+          if (current.status === 'active') {
+            let latest = current;
+            if (clearImages && current.images?.length) {
+              latest = await clearSessionImages(token, current.images);
+            }
+            return succeed(
+              latest,
+              clearImages ? 'Images cleared — you can upload again' : 'Analysis cancelled',
+            );
+          }
+          if (current.status === 'analyzing') {
+            showToast(
+              'Server is still processing. Wait a minute or use Settings → Clear database.',
+              'warning',
+            );
+            return null;
+          }
+        } catch (refreshErr) {
+          if (isSessionNotFoundError(refreshErr) || isSessionNotFoundError(err)) {
+            clearSession();
+            if (clearImages) clearBatch();
+            showToast('Session reset — start a new upload', 'success');
+            return null;
+          }
+        }
+
+        if (isSessionNotFoundError(err)) {
+          clearSession();
+          if (clearImages) clearBatch();
+          showToast('Session reset — start a new upload', 'success');
+          return null;
+        }
+
         showToast(err?.message || 'Could not cancel analysis', 'error');
         return null;
       }
     },
-    [token, clearBatch, showToast],
+    [token, clearBatch, clearSessionImages, showToast, clearSession],
   );
 
   useEffect(() => {
@@ -204,6 +272,10 @@ export function SessionProvider({ children }) {
           navigate(`/result/${data.entry_id}`, { replace: true });
         }
       } catch (err) {
+        if (!cancelled && isSessionNotFoundError(err)) {
+          clearSession();
+          return;
+        }
         if (!cancelled && !isSessionUnavailableError(err)) {
           console.warn('Session poll failed', err);
         }

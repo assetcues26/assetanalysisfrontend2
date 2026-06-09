@@ -331,10 +331,12 @@ export async function cancelCaptureSessionAnalysis(token, options = {}) {
 
 
 export function isSessionUnavailableError(err) {
-
   const message = err?.message || '';
-
   return message.includes('503') || message.toLowerCase().includes('not configured');
+}
 
+export function isSessionNotFoundError(err) {
+  const message = (err?.message || '').toLowerCase();
+  return message.includes('not found') || message.includes('404');
 }
 
