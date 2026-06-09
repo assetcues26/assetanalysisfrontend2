@@ -17,34 +17,66 @@ import { buildResultGallery } from '../utils/blobUrls';
 export function ResultPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getEntryById, isSaved, hydrated } = useHistory();
+  const { getEntryById, ensureEntry, isSaved, hydrated } = useHistory();
+  const [resolvedEntry, setResolvedEntry] = useState(null);
+  const [loadingEntry, setLoadingEntry] = useState(false);
   const { clearBatch } = useBatch();
   const { lastResult, showToast } = useApp();
   const [lightboxIndex, setLightboxIndex] = useState(null);
   const [exportingPdf, setExportingPdf] = useState(false);
 
-  const entry = getEntryById(id) || (lastResult?.id === id ? lastResult : null);
+  const entry =
+    resolvedEntry ||
+    getEntryById(id) ||
+    (lastResult?.id === id || lastResult?.request_id === id ? lastResult : null);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || !id) return;
+    const cached = getEntryById(id);
+    if (cached) {
+      setResolvedEntry(cached);
+      return;
+    }
+    if (lastResult?.id === id || lastResult?.request_id === id) {
+      setResolvedEntry(lastResult);
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingEntry(true);
+    ensureEntry(id)
+      .then((fetched) => {
+        if (!cancelled) setResolvedEntry(fetched);
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEntry(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, id, getEntryById, ensureEntry, lastResult]);
+
+  useEffect(() => {
+    if (!hydrated || loadingEntry) return;
     if (!entry) {
       const t = setTimeout(() => {
-        if (!getEntryById(id)) navigate('/', { replace: true });
-      }, 100);
+        if (!getEntryById(id) && !lastResult) navigate('/', { replace: true });
+      }, 500);
       return () => clearTimeout(t);
     }
-  }, [entry, hydrated, id, getEntryById, navigate]);
+  }, [entry, hydrated, loadingEntry, id, getEntryById, lastResult, navigate]);
 
   if (!entry) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-gray-600">
-        Loading report…
+        {loadingEntry ? 'Loading report…' : 'Report not found'}
       </div>
     );
   }
 
   const galleryImages = buildResultGallery(entry);
-  const saved = isSaved(entry.request_id);
+  const saved = entry.saved_to_db || isSaved(entry.request_id);
 
   const handleExportPdf = async () => {
     setExportingPdf(true);
@@ -102,12 +134,9 @@ export function ResultPage() {
         <Button
           variant="primary"
           className="min-w-[7rem] flex-1"
-          onClick={() => {
-            if (saved) navigate('/history');
-            else showToast('Saving to history…', 'info');
-          }}
+          onClick={() => navigate('/history')}
         >
-          {saved ? 'View in History' : 'Save to History'}
+          View in History
         </Button>
       </footer>
 

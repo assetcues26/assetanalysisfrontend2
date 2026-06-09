@@ -12,13 +12,14 @@ import { ShutterButton } from '../components/capture/ShutterButton';
 import { FlashToggle } from '../components/capture/FlashToggle';
 import { BatchTray } from '../components/batch/BatchTray';
 import { useCamera } from '../hooks/useCamera';
-import { useBatch } from '../hooks/useBatch';
+import { useMergedBatch } from '../hooks/useMergedBatch';
 import { useApp } from '../context/AppContext';
+import { AddFromPhonePanel } from '../components/session/AddFromPhonePanel';
 
 export function CapturePage() {
   const navigate = useNavigate();
   const { maxImages, setPreviewImage, showToast } = useApp();
-  const { batchImages, batchCount, removeImage, canAddMore } = useBatch();
+  const { batchImages, batchCount, removeImage, canAddMore } = useMergedBatch();
   const camera = useCamera();
   const cameraApiRef = useRef(camera);
   cameraApiRef.current = camera;
@@ -100,6 +101,10 @@ export function CapturePage() {
             />
           </div>
         )}
+
+        <div className="px-4 sm:px-6">
+          <AddFromPhonePanel variant="compact" />
+        </div>
 
         <BatchTray
           images={batchImages}

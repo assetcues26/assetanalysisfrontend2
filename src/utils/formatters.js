@@ -66,9 +66,39 @@ export function normalizeCondition(condition) {
   const lower = String(condition).trim().toLowerCase();
   if (lower === 'excellent') return 'Excellent';
   if (lower === 'good') return 'Good';
-  if (lower === 'fair' || lower === 'average') return 'Fair';
+  if (lower === 'fair' || lower === 'average' || lower === 'moderate') return 'Fair';
   if (lower === 'poor' || lower === 'bad' || lower === 'damaged' || lower === 'critical') return 'Poor';
+  if (lower === 'unknown' || lower === 'n/a' || lower === 'na') return null;
   return null;
+}
+
+function scoreToHundred(score) {
+  if (score == null || Number.isNaN(Number(score))) return null;
+  let s = Math.round(Number(score));
+  if (s >= 1 && s <= 10) s *= 10;
+  return Math.max(0, Math.min(100, s));
+}
+
+/**
+ * Client-safe condition label: normalized grade, raw grade, or score-derived fallback.
+ * @param {string | null | undefined} grade
+ * @param {number | null | undefined} overallScore
+ */
+export function resolveConditionLabel(grade, overallScore) {
+  const normalized = normalizeCondition(grade);
+  if (normalized) return normalized;
+
+  const raw = grade && String(grade).trim();
+  if (raw && !/^(unknown|n\/a|na)$/i.test(raw)) {
+    return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+  }
+
+  const score = scoreToHundred(overallScore);
+  if (score == null) return null;
+  if (score >= 85) return 'Excellent';
+  if (score >= 70) return 'Good';
+  if (score >= 50) return 'Fair';
+  return 'Poor';
 }
 
 /**

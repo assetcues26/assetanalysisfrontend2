@@ -34,6 +34,7 @@ export async function analyzeAssetsOnServer(images, processingMode, options = {}
     formData.append('images', img.file, filename);
   }
   formData.append('locale', locale);
+  formData.append('processing_mode', processingMode);
 
   const response = await fetch(url, {
     method: 'POST',

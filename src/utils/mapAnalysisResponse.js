@@ -72,6 +72,15 @@ export function extractUploadedImagesFromApi(api) {
  * @param {{ fallbackPreviewUrls?: string[], processingMode: string }} meta
  */
 export function resolveEntryImages(api, meta) {
+  if (api.image_urls && typeof api.image_urls === 'object') {
+    return {
+      mergedImageUrl: api.image_urls.merged_image_url || null,
+      previewUrls: Array.isArray(api.image_urls.preview_urls)
+        ? api.image_urls.preview_urls
+        : [],
+    };
+  }
+
   const collageUrl = normalizeCollageBase64(api.collage_base64);
   const apiUploads = extractUploadedImagesFromApi(api);
   const isMulti =
@@ -133,7 +142,7 @@ export function mapAnalysisResponse(api, meta) {
     stage_timings_ms: api.stage_timings_ms,
 
     asset_name: asset.name || 'Unknown asset',
-    condition: condition.grade || 'Unknown',
+    condition: condition.grade || null,
     asset_condition: condition.summary || condition.cosmetic_condition || '—',
     asset_description:
       asset.description ||

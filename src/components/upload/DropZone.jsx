@@ -1,13 +1,23 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useId, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ImagePlus, Upload } from 'lucide-react';
 import { Button } from '../ui/button';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
 
-export function DropZone({ onFilesSelected, disabled, onRejectedFiles }) {
+export function DropZone({
+  onFilesSelected,
+  disabled,
+  onRejectedFiles,
+  inputId,
+  title = 'Click to upload or drag and drop',
+  subtitle = 'JPEG, PNG, or WebP. Select one file to preview first, or multiple files to add directly to your batch.',
+  browseLabel = 'Browse Files',
+  embedded = false,
+}) {
   const [dragOver, setDragOver] = useState(false);
-  const inputId = 'file-upload-input';
+  const autoId = useId();
+  const resolvedInputId = inputId || `file-upload-${autoId}`;
 
   const handleFiles = useCallback(
     (fileList) => {
@@ -25,6 +35,16 @@ export function DropZone({ onFilesSelected, disabled, onRejectedFiles }) {
     [onFilesSelected, disabled, onRejectedFiles],
   );
 
+  const zoneClass = embedded
+    ? `flex flex-1 flex-col items-center justify-center gap-4 p-4 sm:gap-5 sm:p-6 ${
+        dragOver ? 'bg-blue-50/50' : ''
+      }`
+    : `flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 transition-colors duration-200 sm:gap-5 sm:p-10 ${
+        dragOver
+          ? 'border-blue-400 bg-blue-50/80'
+          : 'border-gray-200 bg-white/80 backdrop-blur-sm'
+      }`;
+
   return (
     <motion.div
       data-testid="drop-zone"
@@ -38,39 +58,31 @@ export function DropZone({ onFilesSelected, disabled, onRejectedFiles }) {
         setDragOver(false);
         handleFiles(e.dataTransfer.files);
       }}
-      className={`flex flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed p-6 transition-colors duration-200 sm:gap-5 sm:p-10 ${
-        dragOver
-          ? 'border-blue-400 bg-blue-50/80'
-          : 'border-gray-200 bg-white/80 backdrop-blur-sm'
-      } ${disabled ? 'pointer-events-none opacity-50' : ''}`}
+      onClick={() => {
+        if (!disabled) document.getElementById(resolvedInputId)?.click();
+      }}
+      className={`${zoneClass} ${disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer'}`}
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-        <Upload size={32} strokeWidth={1.75} />
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600 sm:h-16 sm:w-16">
+        <Upload size={28} strokeWidth={1.75} className="sm:hidden" />
+        <Upload size={32} strokeWidth={1.75} className="hidden sm:block" />
       </div>
       <div className="max-w-md text-center">
-        <p className="text-lg font-semibold text-gray-900">Drag & drop images here</p>
-        <p className="mt-2 text-sm leading-relaxed text-gray-600">
-          JPEG, PNG, or WebP. Select one file to preview first, or multiple files to add directly
-          to your batch.
-        </p>
+        <p className="text-base font-semibold text-gray-900 sm:text-lg">{title}</p>
+        <p className="mt-2 text-sm leading-relaxed text-gray-600">{subtitle}</p>
       </div>
-      <div className="flex w-full max-w-xs items-center gap-3 text-gray-500">
-        <span className="h-px flex-1 bg-gray-200" />
-        <span className="text-xs font-medium uppercase tracking-wide">or</span>
-        <span className="h-px flex-1 bg-gray-200" />
-      </div>
-      <label htmlFor={inputId}>
+      <label htmlFor={resolvedInputId} onClick={(e) => e.stopPropagation()}>
         <Button
           variant="default"
-          onClick={() => document.getElementById(inputId)?.click()}
-          ariaLabel="Browse files"
+          onClick={() => document.getElementById(resolvedInputId)?.click()}
+          ariaLabel={browseLabel}
         >
           <ImagePlus size={18} strokeWidth={2} aria-hidden />
-          Browse files
+          {browseLabel}
         </Button>
       </label>
       <input
-        id={inputId}
+        id={resolvedInputId}
         type="file"
         accept={ACCEPT}
         multiple

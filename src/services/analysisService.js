@@ -17,7 +17,7 @@ export async function analyzeImages(images, options = {}) {
     throw new Error('No images provided for analysis');
   }
 
-  const processingMode = options.processingMode ?? UPLOAD_PROCESSING_MODES.COLLAGE;
+  const processingMode = options.processingMode ?? UPLOAD_PROCESSING_MODES.DIRECT;
   const apiRoute = resolveAnalysisEndpoint(processingMode);
 
   const withFiles = images.filter((img) => img.file instanceof File);
@@ -45,9 +45,15 @@ export async function analyzeImages(images, options = {}) {
     );
   }
 
-  return mapAnalysisResponse(apiResponse, {
+  const entry = mapAnalysisResponse(apiResponse, {
     fallbackPreviewUrls,
     processingMode,
     apiRoute,
   });
+
+  return {
+    ...entry,
+    id: apiResponse.entry_id || apiResponse.request_id || entry.request_id,
+    saved_to_db: Boolean(apiResponse.saved_to_db),
+  };
 }

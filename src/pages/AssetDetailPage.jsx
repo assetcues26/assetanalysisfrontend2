@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertCircle, X } from 'lucide-react';
@@ -14,10 +14,36 @@ import { buildResultGallery } from '../utils/blobUrls';
 export function AssetDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { getEntryById } = useHistory();
+  const { getEntryById, ensureEntry, hydrated } = useHistory();
   const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [entry, setEntry] = useState(() => getEntryById(id));
+  const [loading, setLoading] = useState(false);
 
-  const entry = getEntryById(id);
+  useEffect(() => {
+    if (!hydrated || !id) return;
+
+    let cancelled = false;
+    setLoading(true);
+    ensureEntry(id)
+      .then((fetched) => {
+        if (!cancelled) setEntry(fetched);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, id, getEntryById, ensureEntry]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-zinc-50 text-gray-600">
+        Loading report…
+      </div>
+    );
+  }
 
   if (!entry) {
     return (

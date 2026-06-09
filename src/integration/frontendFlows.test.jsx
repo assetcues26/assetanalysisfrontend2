@@ -69,7 +69,9 @@ describe('Frontend integration flows', () => {
   it('upload single file → preview → save → returns with batch', async () => {
     const user = userEvent.setup();
     renderAppAt('/upload');
-    await waitFor(() => expect(screen.getByText(/Drag & Drop/i)).toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.getByText(/Click to upload or drag and drop/i)).toBeInTheDocument(),
+    );
 
     const input = document.querySelector('input[type="file"]');
     const file = createTestImageFile('single.jpg');
@@ -196,8 +198,10 @@ describe('Frontend integration flows', () => {
     renderAppAt('/asset/test-history-0');
     await waitFor(() => {
       expect(screen.getAllByText(entry.asset_name).length).toBeGreaterThan(0);
-      expect(screen.getByText(/Detected labels/i)).toBeInTheDocument();
-      expect(screen.getByText(/No tag detected|Tag readable|Tag unreadable/i)).toBeInTheDocument();
+      expect(screen.getByText(/Visible labels|Detected labels/i)).toBeInTheDocument();
+      expect(
+        screen.getAllByText(/No tag detected|Tag readable|Tag unreadable/i).length,
+      ).toBeGreaterThan(0);
     });
   });
 

@@ -11,9 +11,65 @@ beforeEach(() => {
   global.URL.createObjectURL = vi.fn(() => 'blob:mock-preview-url');
   global.URL.revokeObjectURL = vi.fn();
 
-  vi.spyOn(global, 'fetch').mockResolvedValue({
-    ok: true,
-    blob: async () => new Blob(['img'], { type: 'image/jpeg' }),
+  vi.spyOn(global, 'fetch').mockImplementation(async (url, options = {}) => {
+    const href = typeof url === 'string' ? url : url?.url || '';
+    if (href.includes('/v1/sessions')) {
+      if (options.method === 'POST' && href.endsWith('/analyze')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ status: 'analyzing', session_token: 'mock' }),
+        };
+      }
+      if (options.method === 'POST' && href.includes('/images')) {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: async () => ({
+            session_token: 'mock',
+            status: 'active',
+            image_count: 1,
+            images: [],
+          }),
+        };
+      }
+      if (options.method === 'POST') {
+        return {
+          ok: false,
+          status: 503,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ detail: 'Capture sessions are not configured' }),
+        };
+      }
+      return {
+        ok: false,
+        status: 404,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ detail: 'Session not found' }),
+      };
+    }
+    if (href.includes('/v1/history')) {
+      if (options.method === 'DELETE') {
+        return {
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: async () => ({ deleted: true }),
+        };
+      }
+      return {
+        ok: false,
+        status: 503,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ detail: 'History persistence is not configured' }),
+      };
+    }
+    return {
+      ok: true,
+      blob: async () => new Blob(['img'], { type: 'image/jpeg' }),
+    };
   });
 
   HTMLCanvasElement.prototype.getContext = vi.fn(() => ({

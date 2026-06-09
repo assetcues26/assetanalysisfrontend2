@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
 import {
@@ -9,10 +9,12 @@ import {
 import { StatusCycler } from '../components/processing/StatusCycler';
 import { Button } from '@/components/ui/button';
 import { HeroSection } from '../components/layout/HeroSection';
-import { useBatch } from '../hooks/useBatch';
+import { useMergedBatch } from '../hooks/useMergedBatch';
 import { useHistory } from '../hooks/useHistory';
+import { useSession } from '../hooks/useSession';
 import { useApp } from '../context/AppContext';
 import { analyzeImages } from '../services/analysisService';
+import { fetchCaptureSession } from '../services/sessionApi';
 
 const ANALYSIS_TIMEOUT_MS = 120_000;
 
@@ -36,13 +38,19 @@ function withTimeout(promise, ms) {
 
 export function ProcessingPage() {
   const navigate = useNavigate();
-  const { batchImages, batchCount, clearBatch } = useBatch();
+  const [searchParams] = useSearchParams();
+  const sessionToken = searchParams.get('session');
+
+  const { batchImages, batchCount, clearBatch } = useMergedBatch();
   const { addEntry } = useHistory();
+  const { attachToken, clearSession } = useSession();
   const { setLastResult, setAnalysisError, analysisError, uploadProcessingMode } = useApp();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [sessionImageCount, setSessionImageCount] = useState(0);
   const runIdRef = useRef(0);
   const completedRef = useRef(false);
   const startedBatchKeyRef = useRef(null);
+  const sawAnalyzingRef = useRef(false);
 
   const batchKey = useMemo(
     () => batchImages.map((img) => img.id).sort().join('|'),
@@ -54,29 +62,84 @@ export function ProcessingPage() {
     [batchImages],
   );
 
+  const analyzableCount = readyImages.length;
+
   useEffect(() => {
+    if (sessionToken) {
+      attachToken(sessionToken);
+    }
+  }, [sessionToken, attachToken]);
+
+  useEffect(() => {
+    if (!sessionToken) return undefined;
+
+    let cancelled = false;
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    completedRef.current = false;
+    sawAnalyzingRef.current = false;
+
+    const poll = async () => {
+      try {
+        const data = await fetchCaptureSession(sessionToken);
+        if (cancelled) return;
+        setSessionImageCount(data.image_count || 0);
+
+        if (data.status === 'analyzing') {
+          sawAnalyzingRef.current = true;
+        }
+
+        if (data.status === 'completed' && data.entry_id) {
+          completedRef.current = true;
+          clearBatch();
+          clearSession();
+          navigate(`/result/${data.entry_id}`, { replace: true });
+          return;
+        }
+
+        if (data.status === 'expired') {
+          setAnalysisError('This scan session has expired. Start a new session on your computer.');
+          setIsAnalyzing(false);
+          return;
+        }
+
+        if (data.status === 'active' && sawAnalyzingRef.current) {
+          setAnalysisError('Analysis was interrupted. Return to batch and try again.');
+          setIsAnalyzing(false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setAnalysisError(err.message || 'Could not track session analysis');
+          setIsAnalyzing(false);
+        }
+      }
+    };
+
+    poll();
+    const id = setInterval(poll, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, [sessionToken, navigate, clearBatch, clearSession, setAnalysisError]);
+
+  useEffect(() => {
+    if (sessionToken) return undefined;
+
     if (batchCount === 0) {
       if (!isAnalyzing && !completedRef.current) {
         navigate('/', { replace: true });
       }
-      return;
+      return undefined;
     }
 
-    if (readyImages.length === 0) {
+    if (analyzableCount === 0) {
       setAnalysisError('Missing image files — remove items and re-upload from capture or upload.');
       setIsAnalyzing(false);
-      return;
+      return undefined;
     }
 
-    if (readyImages.length !== batchCount) {
-      setAnalysisError(
-        `${batchCount - readyImages.length} image(s) could not be read — remove them and add again.`,
-      );
-      setIsAnalyzing(false);
-      return;
-    }
-
-    if (startedBatchKeyRef.current === batchKey) return;
+    if (startedBatchKeyRef.current === batchKey) return undefined;
     startedBatchKeyRef.current = batchKey;
 
     const runId = ++runIdRef.current;
@@ -116,8 +179,9 @@ export function ProcessingPage() {
       startedBatchKeyRef.current = null;
     };
   }, [
+    sessionToken,
     batchKey,
-    batchCount,
+    analyzableCount,
     readyImages,
     uploadProcessingMode,
     addEntry,
@@ -127,7 +191,9 @@ export function ProcessingPage() {
     navigate,
   ]);
 
-  if (batchCount === 0 && !isAnalyzing && !analysisError) return null;
+  const displayCount = sessionToken ? sessionImageCount : analyzableCount;
+
+  if (!sessionToken && batchCount === 0 && !isAnalyzing && !analysisError) return null;
 
   if (analysisError && !isAnalyzing) {
     return (
@@ -139,7 +205,7 @@ export function ProcessingPage() {
           You can analyze 1–10 images per batch (collage or multi-image mode). Check processing
           settings on the home page if one mode fails.
         </p>
-        <Button onClick={() => navigate('/batch')}>Try Again</Button>
+        <Button onClick={() => navigate(sessionToken ? '/upload' : '/batch')}>Try Again</Button>
       </div>
     );
   }
@@ -154,8 +220,8 @@ export function ProcessingPage() {
         >
           <ProcessingAnimation />
           <p className="mt-6 text-center text-sm text-gray-600">
-            Analyzing {readyImages.length} image{readyImages.length === 1 ? '' : 's'}… This may
-            take up to a minute.
+            Analyzing {displayCount} image{displayCount === 1 ? '' : 's'}… This may take up to a
+            minute.
           </p>
           <div className="mt-10 w-full max-w-md">
             <StatusCycler />

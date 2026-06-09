@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2, MinusCircle, Star } from 'lucide-react';
-import { normalizeCondition } from '../../utils/formatters';
+import { resolveConditionLabel } from '../../utils/formatters';
 
 const config = {
   Excellent: {
@@ -20,8 +20,8 @@ const config = {
   },
 };
 
-export function ConditionBadge({ condition }) {
-  const normalized = normalizeCondition(condition);
+export function ConditionBadge({ condition, overallScore }) {
+  const normalized = resolveConditionLabel(condition, overallScore);
   if (!normalized) return null;
   const { icon: Icon, className } = config[normalized];
 

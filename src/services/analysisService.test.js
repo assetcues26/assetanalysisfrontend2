@@ -37,6 +37,26 @@ describe('analysisService', () => {
     ).rejects.toThrow(/missing file data/i);
   });
 
+  it('defaults to multi-image endpoint when processingMode omitted', async () => {
+    analyzeAssetsOnServer.mockResolvedValue({
+      status: 'success',
+      request_id: 'req-default',
+      analysis_method: 'multi_image',
+      images_base64: ['u1'],
+      asset: { name: 'Unit' },
+      condition: { grade: 'Good' },
+      identifiers: { asset_tag_number_raw: 'T', tag_readable: true },
+      confidence: { overall: 0.9 },
+    });
+
+    const file = new File(['x'], 'a.jpg', { type: 'image/jpeg' });
+    const result = await analyzeImages([
+      { id: '1', file, previewUrl: 'blob:test', name: 'a.jpg' },
+    ]);
+
+    expect(result.apiRoute).toBe(ASSET_ANALYSIS_ENDPOINTS.multi);
+  });
+
   it('calls collage endpoint and uses API base64 images', async () => {
     analyzeAssetsOnServer.mockResolvedValue({
       status: 'success',

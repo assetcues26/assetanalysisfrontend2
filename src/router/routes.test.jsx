@@ -110,7 +110,7 @@ describe('AppRouter — route endpoints', () => {
     renderAppAt('/');
     await user.click(screen.getByRole('button', { name: /Upload Images/i }));
     await waitFor(() => {
-      expect(screen.getByText(/Drag & Drop images here/i)).toBeInTheDocument();
+      expect(screen.getByText(/Click to upload or drag and drop/i)).toBeInTheDocument();
     });
   });
 

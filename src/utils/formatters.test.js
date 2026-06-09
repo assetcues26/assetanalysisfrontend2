@@ -7,6 +7,7 @@ import {
   formatDateTime,
   truncateText,
   normalizeCondition,
+  resolveConditionLabel,
   formatUsdCost,
   formatTokenCount,
 } from './formatters';
@@ -96,10 +97,21 @@ describe('formatters', () => {
   describe('normalizeCondition', () => {
     it('maps good, fair, and poor', () => {
       expect(normalizeCondition('Good')).toBe('Good');
-      expect(normalizeCondition('excellent')).toBe('Good');
+      expect(normalizeCondition('excellent')).toBe('Excellent');
       expect(normalizeCondition('Fair')).toBe('Fair');
       expect(normalizeCondition('damaged')).toBe('Poor');
-      expect(normalizeCondition('')).toBe('Fair');
+      expect(normalizeCondition('')).toBe(null);
+    });
+  });
+
+  describe('resolveConditionLabel', () => {
+    it('falls back to score when grade is missing', () => {
+      expect(resolveConditionLabel(null, 75)).toBe('Good');
+      expect(resolveConditionLabel('Unknown', 62)).toBe('Fair');
+    });
+
+    it('title-cases unmapped raw grades', () => {
+      expect(resolveConditionLabel('Used', null)).toBe('Used');
     });
   });
 });

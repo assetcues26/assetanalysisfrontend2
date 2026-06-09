@@ -7,71 +7,65 @@ import {
   useState,
 } from 'react';
 import { isLegacySeedEntry } from '../utils/mockData';
-import { persistEntryImages } from '../utils/blobUrls';
-
-const STORAGE_KEY = 'assetlens_history';
+import {
+  deleteHistoryEntry,
+  fetchHistoryEntry,
+  fetchHistoryList,
+  hydrateEntry,
+  hydrateListItem,
+  isHistoryUnavailableError,
+} from '../services/historyApi';
 
 const HistoryContext = createContext(null);
 
-function loadHistory() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-function persistHistory(entries) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-  } catch (err) {
-    console.warn('History storage full; saving without new image data', err);
-    const slim = entries.map((entry) => ({
-      ...entry,
-      mergedImageUrl: entry.mergedImageUrl?.startsWith('data:')
-        ? entry.mergedImageUrl
-        : undefined,
-      previewUrls: (entry.previewUrls || []).filter((url) => url.startsWith('data:')),
-    }));
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(slim));
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
-/** Remove legacy sample seed rows from persisted history (one-time cleanup on load). */
+/** Remove legacy sample seed rows (one-time cleanup if old local data exists). */
 export function stripLegacySeedEntries(entries) {
   if (!Array.isArray(entries)) return [];
   return entries.filter((entry) => !isLegacySeedEntry(entry));
 }
 
-
 export function HistoryProvider({ children }) {
   const [history, setHistory] = useState([]);
   const [hydrated, setHydrated] = useState(false);
+  const [historyApiEnabled, setHistoryApiEnabled] = useState(true);
+  const [loadingEntryIds, setLoadingEntryIds] = useState(() => new Set());
 
   useEffect(() => {
-    const stored = loadHistory();
-    const cleaned = stripLegacySeedEntries(stored ?? []);
-    if (stored && cleaned.length !== stored.length) {
-      persistHistory(cleaned);
-    }
-    setHistory(cleaned);
-    setHydrated(true);
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const data = await fetchHistoryList({ limit: 100 });
+        if (cancelled) return;
+        const items = (data.items || []).map(hydrateListItem);
+        setHistory(stripLegacySeedEntries(items));
+        setHistoryApiEnabled(true);
+      } catch (err) {
+        if (!cancelled) {
+          if (isHistoryUnavailableError(err)) {
+            setHistoryApiEnabled(false);
+          } else {
+            console.warn('Could not load history from API', err);
+          }
+          setHistory([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setHydrated(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    persistHistory(history);
-  }, [history, hydrated]);
-
   const addEntry = useCallback(async (entry) => {
-    const id = entry.id || `hist-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const id =
+      entry.id ||
+      entry.request_id ||
+      `hist-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const processedAt = entry.processedAt || new Date().toISOString();
     const newEntry = { ...entry, id, processedAt };
 
@@ -82,30 +76,63 @@ export function HistoryProvider({ children }) {
       return [newEntry, ...withoutDuplicate];
     });
 
-    const needsPersist =
-      newEntry.mergedImageUrl?.startsWith('blob:') ||
-      newEntry.previewUrls?.some((url) => url?.startsWith('blob:'));
-
-    if (needsPersist) {
-      try {
-        const persisted = await persistEntryImages(newEntry);
-        setHistory((prev) => prev.map((e) => (e.id === id ? persisted : e)));
-        return persisted;
-      } catch (err) {
-        console.warn('Could not persist history images', err);
-      }
-    }
-
     return newEntry;
   }, []);
 
-  const deleteEntry = useCallback((id) => {
-    setHistory((prev) => prev.filter((e) => e.id !== id));
-  }, []);
+  const deleteEntry = useCallback(
+    async (id) => {
+      if (historyApiEnabled) {
+        try {
+          await deleteHistoryEntry(id);
+        } catch (err) {
+          console.warn('History delete API failed', err);
+          throw err;
+        }
+      }
+      setHistory((prev) => prev.filter((e) => e.id !== id && e.request_id !== id));
+    },
+    [historyApiEnabled],
+  );
 
   const getEntryById = useCallback(
     (id) => history.find((e) => e.id === id || e.request_id === id),
     [history],
+  );
+
+  const ensureEntry = useCallback(
+    async (id) => {
+      const cached = getEntryById(id);
+      if (cached?.conditionDetail || cached?.apiResponse) return cached;
+      if (!historyApiEnabled || !id) return cached ?? null;
+
+      setLoadingEntryIds((prev) => new Set(prev).add(id));
+      try {
+        const detail = await fetchHistoryEntry(id);
+        const entry = hydrateEntry(detail);
+        setHistory((prev) => {
+          const exists = prev.some(
+            (e) => e.id === entry.id || e.request_id === entry.request_id,
+          );
+          if (exists) {
+            return prev.map((e) =>
+              e.id === entry.id || e.request_id === entry.request_id ? entry : e,
+            );
+          }
+          return [entry, ...prev];
+        });
+        return entry;
+      } catch (err) {
+        console.warn('Could not fetch history entry', err);
+        return null;
+      } finally {
+        setLoadingEntryIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }
+    },
+    [getEntryById, historyApiEnabled],
   );
 
   const searchEntries = useCallback(
@@ -131,14 +158,28 @@ export function HistoryProvider({ children }) {
     () => ({
       history,
       hydrated,
+      historyApiEnabled,
+      loadingEntryIds,
       addEntry,
       deleteEntry,
       getEntryById,
+      ensureEntry,
       searchEntries,
       isSaved,
       historyCount: history.length,
     }),
-    [history, hydrated, addEntry, deleteEntry, getEntryById, searchEntries, isSaved],
+    [
+      history,
+      hydrated,
+      historyApiEnabled,
+      loadingEntryIds,
+      addEntry,
+      deleteEntry,
+      getEntryById,
+      ensureEntry,
+      searchEntries,
+      isSaved,
+    ],
   );
 
   return (

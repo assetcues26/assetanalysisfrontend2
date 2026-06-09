@@ -9,13 +9,17 @@ import { Button } from '@/components/ui/button';
 import { BatchThumbnail } from '../components/batch/BatchThumbnail';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { HeroSection } from '../components/layout/HeroSection';
-import { useBatch } from '../hooks/useBatch';
+import { useMergedBatch } from '../hooks/useMergedBatch';
+import { useSession } from '../hooks/useSession';
 import { useApp } from '../context/AppContext';
+import { AddFromPhonePanel } from '../components/session/AddFromPhonePanel';
 
 export function BatchPage() {
   const navigate = useNavigate();
   const { setLastResult, setAnalysisError } = useApp();
-  const { batchImages, batchCount, removeImage, maxImages } = useBatch();
+  const { batchImages, batchCount, removeImage, maxImages, hasLocalFiles, hasSessionImages } =
+    useMergedBatch();
+  const { isSessionActive, token, startAnalyze } = useSession();
 
   useEffect(() => {
     if (batchCount === 0) {
@@ -40,6 +44,10 @@ export function BatchPage() {
 
       <HeroSection>
         <PageWrapper className="py-6">
+          <div className="mb-6">
+            <AddFromPhonePanel variant="compact" />
+          </div>
+
           <motion.div
             key={batchCount}
             initial={{ opacity: 0 }}
@@ -100,9 +108,23 @@ export function BatchPage() {
           label="Proceed to Analysis"
           count={batchCount}
           disabled={batchCount === 0}
-          onClick={() => {
+          onClick={async () => {
             setLastResult(null);
             setAnalysisError(null);
+            if (hasLocalFiles) {
+              navigate('/processing');
+              return;
+            }
+            if (isSessionActive && token && hasSessionImages) {
+              const result = await startAnalyze();
+              if (
+                result &&
+                (result.status === 'analyzing' || result.status === 'completed')
+              ) {
+                navigate(`/processing?session=${encodeURIComponent(token)}`);
+              }
+              return;
+            }
             navigate('/processing');
           }}
         />

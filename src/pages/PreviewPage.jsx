@@ -7,7 +7,7 @@ import { BackButton } from '../components/ui/BackButton';
 import { ProceedButton } from '../components/ui/ProceedButton';
 import { Button } from '@/components/ui/button';
 import { useApp } from '../context/AppContext';
-import { useBatch } from '../hooks/useBatch';
+import { useMergedBatch } from '../hooks/useMergedBatch';
 import { formatFileSize } from '../utils/formatters';
 
 export function PreviewPage() {
@@ -16,7 +16,7 @@ export function PreviewPage() {
   const [params] = useSearchParams();
   const source = params.get('source') || 'capture';
   const { previewImage, setPreviewImage, showToast } = useApp();
-  const { tryAddImage, batchCount } = useBatch();
+  const { tryAddImage, batchCount } = useMergedBatch();
   const [meta, setMeta] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -54,8 +54,8 @@ export function PreviewPage() {
     goBack();
   };
 
-  const handleSave = () => {
-    const added = tryAddImage(previewImage.file);
+  const handleSave = async () => {
+    const added = await tryAddImage(previewImage.file);
     if (added) {
       showToast('Image saved to batch', 'success');
     }

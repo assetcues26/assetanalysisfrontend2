@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { AppProvider, useApp } from './AppContext';
-import {
-  UPLOAD_MODE_STORAGE_KEY,
-  UPLOAD_PROCESSING_MODES,
-} from '../constants/uploadMode';
+import { UPLOAD_PROCESSING_MODES } from '../constants/uploadMode';
 
 function wrapper({ children }) {
   return <AppProvider>{children}</AppProvider>;
@@ -49,18 +46,15 @@ describe('AppContext', () => {
     expect(result.current.toasts).toHaveLength(0);
   });
 
-  it('persists upload processing mode to localStorage', async () => {
+  it('updates upload processing mode in memory', async () => {
     const { result } = renderHook(() => useApp(), { wrapper });
     act(() => {
       vi.advanceTimersByTime(700);
     });
     act(() => {
-      result.current.setUploadProcessingMode(UPLOAD_PROCESSING_MODES.DIRECT);
+      result.current.setUploadProcessingMode(UPLOAD_PROCESSING_MODES.COLLAGE);
     });
-    expect(result.current.uploadProcessingMode).toBe(UPLOAD_PROCESSING_MODES.DIRECT);
-    expect(localStorage.getItem(UPLOAD_MODE_STORAGE_KEY)).toBe(
-      UPLOAD_PROCESSING_MODES.DIRECT,
-    );
+    expect(result.current.uploadProcessingMode).toBe(UPLOAD_PROCESSING_MODES.COLLAGE);
   });
 
   it('stores preview and result state', async () => {

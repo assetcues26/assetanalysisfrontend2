@@ -76,11 +76,6 @@ function ValuationPanel({ valuation, erpVerification, erpContext }) {
       title="Valuation"
       subtitle="India market estimates in rupees (₹)"
     >
-      {valuation.status === 'withheld' && (
-        <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          {humanizeValuationStatus('withheld')}
-        </p>
-      )}
       {!hasAmounts ? (
         <div className="space-y-2 text-sm text-gray-600">
           <p>No rupee estimate is available for this scan.</p>

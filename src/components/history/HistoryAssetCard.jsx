@@ -59,7 +59,10 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
           </Button>
 
           <CardItem translateZ={50} className="w-full pr-24 text-neutral-800">
-            <ConditionBadge condition={entry.condition} />
+            <ConditionBadge
+              condition={entry.conditionDetail?.grade ?? entry.condition}
+              overallScore={entry.conditionDetail?.overall_score}
+            />
             <h3 className="mt-2 truncate text-lg font-bold sm:text-xl">{entry.asset_name}</h3>
             <p className="mt-1 truncate font-mono text-xs text-neutral-500">
               {entry.detected_tag_number_raw}
@@ -205,9 +208,13 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
         title="Delete asset?"
         description={`Remove "${entry.asset_name}" from your history? This cannot be undone.`}
         confirmLabel="Delete"
-        onConfirm={() => {
-          onDelete(entry.id);
-          setConfirmOpen(false);
+        onConfirm={async () => {
+          try {
+            await onDelete(entry.id);
+            setConfirmOpen(false);
+          } catch {
+            showToast('Could not delete — try again', 'error');
+          }
         }}
         onCancel={() => setConfirmOpen(false)}
       />

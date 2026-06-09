@@ -5,6 +5,16 @@ import { HistoryProvider } from './context/HistoryContext';
 import { V6Provider } from './context/V6SessionContext';
 import { ToastContainer } from './components/ui/Toast';
 import { AppRouter } from './router/AppRouter';
+import { V6_DEMO_ENABLED } from './config/features';
+
+function AppShell() {
+  return (
+    <>
+      <AppRouter />
+      <ToastContainer />
+    </>
+  );
+}
 
 export default function App() {
   return (
@@ -12,10 +22,13 @@ export default function App() {
       <CameraProvider>
         <HistoryProvider>
           <BatchProvider>
-            <V6Provider>
-              <AppRouter />
-              <ToastContainer />
-            </V6Provider>
+            {V6_DEMO_ENABLED ? (
+              <V6Provider>
+                <AppShell />
+              </V6Provider>
+            ) : (
+              <AppShell />
+            )}
           </BatchProvider>
         </HistoryProvider>
       </CameraProvider>

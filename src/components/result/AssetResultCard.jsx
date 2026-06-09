@@ -13,7 +13,7 @@ import {
   formatAgeYearsMonths,
   formatBookNbvDisplay,
   formatInrMoneyRange,
-  normalizeCondition,
+  resolveConditionLabel,
 } from '../../utils/formatters';
 import { tagReadabilityLabel, tagReadabilityStatus } from '../../utils/tagReadability';
 
@@ -53,10 +53,9 @@ function CopyField({ value, label }) {
   );
 }
 
-function conditionVariant(condition) {
-  const n = normalizeCondition(condition);
-  if (n === 'Good') return 'success';
-  if (n === 'Poor') return 'warning';
+function conditionVariant(label) {
+  if (label === 'Excellent' || label === 'Good') return 'success';
+  if (label === 'Poor') return 'warning';
   return 'default';
 }
 
@@ -95,7 +94,10 @@ export function AssetResultCard({
   );
   const hasBookNbv = bookNbvDisplay !== '—';
   const isErpBookNbv = result.valuation?.nbv?.method === 'erp_book_nbv';
-  const conditionLabel = normalizeCondition(result.condition);
+  const conditionLabel = resolveConditionLabel(
+    result.conditionDetail?.grade ?? result.condition,
+    result.conditionDetail?.overall_score,
+  );
   const rawTag =
     result.detected_tag_number_raw && result.detected_tag_number_raw !== '—'
       ? result.detected_tag_number_raw
@@ -139,7 +141,10 @@ export function AssetResultCard({
             </h2>
             {assetSubtitle && <p className="mt-1.5 text-sm text-gray-600">{assetSubtitle}</p>}
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <ConditionBadge condition={result.condition} />
+              <ConditionBadge
+                condition={result.conditionDetail?.grade ?? result.condition}
+                overallScore={result.conditionDetail?.overall_score}
+              />
               <span
                 className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${
                   tagStatus === 'readable'
@@ -198,7 +203,7 @@ export function AssetResultCard({
             label="Condition"
             value={conditionLabel}
             hint={result.asset_condition !== '—' ? 'See overview' : undefined}
-            variant={conditionVariant(result.condition)}
+            variant={conditionVariant(conditionLabel)}
           />
           <HighlightMetric
             label="Current estimate"

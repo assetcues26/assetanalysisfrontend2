@@ -1,10 +1,8 @@
 import { ASSET_ANALYSIS_ENDPOINTS } from '../config/api';
 
-export const UPLOAD_MODE_STORAGE_KEY = 'assetcues_upload_processing_mode';
-
 /** @typedef {'collage' | 'direct'} UploadProcessingMode */
 
-/** Collage = single collage sent to API; direct = multi-image endpoint (stored key kept for compatibility). */
+/** Collage = single collage sent to API; direct = multi-image endpoint. */
 export const UPLOAD_PROCESSING_MODES = {
   COLLAGE: 'collage',
   DIRECT: 'direct',
@@ -26,12 +24,7 @@ export function isValidUploadMode(value) {
   );
 }
 
+/** In-memory default only — no browser storage (demo: each run is fresh). */
 export function readStoredUploadMode() {
-  try {
-    const stored = localStorage.getItem(UPLOAD_MODE_STORAGE_KEY);
-    if (isValidUploadMode(stored)) return stored;
-  } catch {
-    /* ignore */
-  }
   return UPLOAD_PROCESSING_MODES.DIRECT;
 }

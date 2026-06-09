@@ -8,7 +8,6 @@ import {
 } from 'react';
 import {
   readStoredUploadMode,
-  UPLOAD_MODE_STORAGE_KEY,
   UPLOAD_PROCESSING_MODES,
 } from '../constants/uploadMode';
 
@@ -34,11 +33,6 @@ export function AppProvider({ children }) {
 
   const setUploadProcessingMode = useCallback((mode) => {
     setUploadProcessingModeState(mode);
-    try {
-      localStorage.setItem(UPLOAD_MODE_STORAGE_KEY, mode);
-    } catch {
-      /* ignore quota / private mode */
-    }
   }, []);
 
   useEffect(() => {
