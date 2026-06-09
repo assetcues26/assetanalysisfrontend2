@@ -188,8 +188,8 @@ function ConditionPanel({ condition }) {
   return (
     <ResultPanel
       icon={Wrench}
-      title="Condition & damage"
-      subtitle="Physical state and repair outlook"
+      title="Damage analysis"
+      subtitle="Severity, repair outlook, and item-level damage"
     >
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {condition.grade && (
@@ -300,7 +300,7 @@ function AssetProfilePanel({ asset }) {
   if (!asset) return null;
 
   return (
-    <ResultPanel icon={Package} title="Asset profile" subtitle="Identity and specifications">
+    <CollapsiblePanel icon={Package} title="Asset profile" subtitle="Identity and specifications">
       <InfoGrid
         items={[
           ['Category', asset.category],
@@ -323,7 +323,7 @@ function AssetProfilePanel({ asset }) {
           ],
         ]}
       />
-    </ResultPanel>
+    </CollapsiblePanel>
   );
 }
 
@@ -395,7 +395,7 @@ function ErpVerificationPanel({ erpVerification }) {
   const warnings = erpVerification.validation_warnings || [];
 
   return (
-    <ResultPanel
+    <CollapsiblePanel
       icon={Fingerprint}
       title="ERP verification"
       subtitle="Vision results compared to input payload"
@@ -462,7 +462,7 @@ function ErpVerificationPanel({ erpVerification }) {
           ))}
         </ul>
       )}
-    </ResultPanel>
+    </CollapsiblePanel>
   );
 }
 
@@ -480,7 +480,7 @@ function TrackingPanel({ result, identifiers }) {
   if (!hasIds && !hasLabels && !hasStickers) return null;
 
   return (
-    <ResultPanel icon={Fingerprint} title="Tracking & labels" subtitle="Tags, barcodes, and stickers">
+    <CollapsiblePanel icon={Fingerprint} title="Tracking & labels" subtitle="Tags, barcodes, and stickers">
       <div className="space-y-5">
         <InfoGrid
           items={[
@@ -546,7 +546,7 @@ function TrackingPanel({ result, identifiers }) {
           </div>
         )}
       </div>
-    </ResultPanel>
+    </CollapsiblePanel>
   );
 }
 
@@ -619,14 +619,14 @@ export function AnalysisDetailSections({ result }) {
 
   return (
     <div className="space-y-6">
-      <ErpVerificationPanel erpVerification={erpVerification} />
       <ValuationPanel
         valuation={valuation}
         erpVerification={erpVerification}
         erpContext={result.erpContext}
       />
-      <AssetProfilePanel asset={asset} />
       <ConditionPanel condition={condition} />
+      <ErpVerificationPanel erpVerification={erpVerification} />
+      <AssetProfilePanel asset={asset} />
       <TrackingPanel result={result} identifiers={identifiers} />
       <InsightsPanel reasoning={result.reasoning_summary} />
     </div>
