@@ -154,6 +154,22 @@ export function HistoryProvider({ children }) {
     [history],
   );
 
+  const reloadHistory = useCallback(async () => {
+    try {
+      const data = await fetchHistoryList({ limit: 100 });
+      const items = (data.items || []).map(hydrateListItem);
+      setHistory(stripLegacySeedEntries(items));
+      setHistoryApiEnabled(true);
+    } catch (err) {
+      if (isHistoryUnavailableError(err)) {
+        setHistoryApiEnabled(false);
+      }
+      setHistory([]);
+    } finally {
+      setHydrated(true);
+    }
+  }, []);
+
   const value = useMemo(
     () => ({
       history,
@@ -166,6 +182,7 @@ export function HistoryProvider({ children }) {
       ensureEntry,
       searchEntries,
       isSaved,
+      reloadHistory,
       historyCount: history.length,
     }),
     [
@@ -179,6 +196,7 @@ export function HistoryProvider({ children }) {
       ensureEntry,
       searchEntries,
       isSaved,
+      reloadHistory,
     ],
   );
 

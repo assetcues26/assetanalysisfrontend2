@@ -9,8 +9,8 @@ export const UPLOAD_PROCESSING_MODES = {
 };
 
 export const UPLOAD_MODE_LABELS = {
-  [UPLOAD_PROCESSING_MODES.COLLAGE]: 'Collage analysis (stitched collage)',
-  [UPLOAD_PROCESSING_MODES.DIRECT]: 'Multi-image analysis (per image)',
+  [UPLOAD_PROCESSING_MODES.COLLAGE]: 'Combined view (collage)',
+  [UPLOAD_PROCESSING_MODES.DIRECT]: 'Multi-angle (recommended)',
 };
 
 export const UPLOAD_MODE_API_ROUTES = {

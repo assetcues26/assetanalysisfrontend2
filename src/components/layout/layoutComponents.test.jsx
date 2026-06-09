@@ -20,7 +20,7 @@ describe('Layout components', () => {
     expect(screen.getByRole('link', { name: 'Capture' })).toHaveAttribute('href', '/capture');
     expect(screen.getByRole('link', { name: 'Upload' })).toHaveAttribute('href', '/upload');
     expect(screen.getByRole('link', { name: 'History' })).toHaveAttribute('href', '/history');
-    expect(screen.getByLabelText('Processing settings')).toBeInTheDocument();
+    expect(screen.getByLabelText('App settings')).toBeInTheDocument();
   });
 
   it('AppFooter renders tagline and powered badge', () => {

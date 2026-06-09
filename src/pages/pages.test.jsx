@@ -55,7 +55,7 @@ describe('Page components', () => {
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /AI-Powered Asset Intelligence/i })).toBeInTheDocument();
       expect(screen.queryByText('Asset History')).not.toBeInTheDocument();
-      expect(screen.getByLabelText('Processing settings')).toBeInTheDocument();
+      expect(screen.getByLabelText('App settings')).toBeInTheDocument();
     });
   });
 
