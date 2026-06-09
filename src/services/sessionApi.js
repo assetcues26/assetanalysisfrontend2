@@ -9,7 +9,16 @@ import { prepareImagesForUpload, sumSessionImageBytes } from '../utils/imageComp
 const SESSIONS_BASE = `${ASSET_ANALYSIS_API_BASE}/v1/sessions`;
 
 const UPLOAD_TIMEOUT_MS = 90_000;
-const ANALYZE_TIMEOUT_MS = 120_000;
+const ANALYZE_TIMEOUT_MS = 60_000;
+
+let activeAnalyzeController = null;
+
+export function abortActiveSessionAnalyze() {
+  if (activeAnalyzeController) {
+    activeAnalyzeController.abort();
+    activeAnalyzeController = null;
+  }
+}
 
 function isMobileDevice() {
   if (typeof navigator === 'undefined') return false;
@@ -261,10 +270,14 @@ export async function deleteSessionImage(token, imageId) {
  */
 
 export async function analyzeCaptureSession(token, options = {}) {
+  abortActiveSessionAnalyze();
+  const controller = new AbortController();
+  activeAnalyzeController = controller;
+  const signal = options.signal || controller.signal;
+
   const formData = new FormData();
   formData.append('locale', options.locale || 'en-IN');
 
-  const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
 
   try {
@@ -272,7 +285,7 @@ export async function analyzeCaptureSession(token, options = {}) {
       method: 'POST',
       headers: sessionHeaders(),
       body: formData,
-      signal: controller.signal,
+      signal,
     });
     const data = await parseJsonResponse(response);
     if (!response.ok) {
@@ -281,7 +294,7 @@ export async function analyzeCaptureSession(token, options = {}) {
     return data;
   } catch (err) {
     if (err?.name === 'AbortError') {
-      throw new Error('Analysis timed out — try again with fewer images.');
+      throw new Error('Analysis cancelled or timed out.');
     }
     if (err?.name === 'TypeError') {
       throw new Error('Network error during analysis — check your connection.');
@@ -289,7 +302,30 @@ export async function analyzeCaptureSession(token, options = {}) {
     throw err;
   } finally {
     clearTimeout(timeoutId);
+    if (activeAnalyzeController === controller) {
+      activeAnalyzeController = null;
+    }
   }
+}
+
+/**
+ * Stop an in-flight analyze request and unlock the session on the server.
+ *
+ * @param {string} token
+ * @param {{ clearImages?: boolean }} [options]
+ */
+export async function cancelCaptureSessionAnalysis(token, options = {}) {
+  abortActiveSessionAnalyze();
+  const response = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(token)}/cancel`, {
+    method: 'POST',
+    headers: { ...sessionHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify({ clear_images: Boolean(options.clearImages) }),
+  });
+  const data = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(formatApiErrorMessage(data, response.status));
+  }
+  return data;
 }
 
 

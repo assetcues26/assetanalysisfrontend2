@@ -2,12 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   analyzeCaptureSession,
+  cancelCaptureSessionAnalysis,
   fetchCaptureSession,
   isSessionUnavailableError,
 } from '../services/sessionApi';
 
 const POLL_MS = 1000;
-const ANALYZE_STALE_MS = 120_000;
+const ANALYZE_STALE_MS = 60_000;
 
 /**
  * Poll capture session on mobile routes.
@@ -19,6 +20,7 @@ export function useMobileSession(token) {
   const [session, setSession] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
   const sawAnalyzingRef = useRef(false);
   const analyzingSinceRef = useRef(null);
   const pathnameRef = useRef(location.pathname);
@@ -35,7 +37,7 @@ export function useMobileSession(token) {
         }
         const elapsed = Date.now() - analyzingSinceRef.current;
         if (elapsed > ANALYZE_STALE_MS) {
-          setError('Analysis timed out. Go back and try again.');
+          setError('Analysis timed out after 60 seconds. Cancel and try again.');
         }
         if (!pathnameRef.current.includes('/processing')) {
           navigate(`/scan/${token}/processing`, { replace: true });
@@ -47,8 +49,12 @@ export function useMobileSession(token) {
 
       if (data.status === 'active' && sawAnalyzingRef.current) {
         sawAnalyzingRef.current = false;
-        setError('Analysis was interrupted. Go back and try again.');
+        setError((prev) => prev || 'Analysis was interrupted. Cancel and try again.');
         return;
+      }
+
+      if (data.status === 'active') {
+        setError(null);
       }
 
       if (data.status === 'completed' && data.entry_id) {
@@ -64,8 +70,8 @@ export function useMobileSession(token) {
     try {
       const data = await fetchCaptureSession(token);
       setSession(data);
-      if (data.status !== 'expired') {
-        setError(null);
+      if (data.status === 'expired') {
+        setError('This scan link has expired. Start a new scan on your computer.');
       }
       handleSessionStatus(data);
       return data;
@@ -128,12 +134,36 @@ export function useMobileSession(token) {
     }
   }, [token, refresh, navigate]);
 
+  const cancelAnalysis = useCallback(
+    async ({ clearImages = false } = {}) => {
+      if (!token) return null;
+      setCancelling(true);
+      try {
+        const updated = await cancelCaptureSessionAnalysis(token, { clearImages });
+        setSession(updated);
+        sawAnalyzingRef.current = false;
+        analyzingSinceRef.current = null;
+        setError(null);
+        navigate(`/scan/${token}/done`, { replace: true });
+        return updated;
+      } catch (err) {
+        setError(err?.message || 'Could not cancel analysis');
+        return null;
+      } finally {
+        setCancelling(false);
+      }
+    },
+    [token, navigate],
+  );
+
   return {
     session,
     error,
     loading,
+    cancelling,
     refresh,
     startAnalyze,
+    cancelAnalysis,
     isUnavailable: error && isSessionUnavailableError({ message: error }),
     imageCount: session?.image_count ?? 0,
     maxImages: session?.max_images ?? 10,

@@ -33,9 +33,11 @@ vi.mock('../hooks/useMergedBatch', () => ({
 vi.mock('../hooks/useSession', () => ({
   useSession: () => ({
     isSessionActive: true,
+    isSessionAnalyzing: false,
     token: 'session-token-abcdefghijklmnopqrstuvwxyz',
     startAnalyze: mockStartAnalyze,
     uploadImage: mockUploadImage,
+    cancelAnalysis: vi.fn(),
   }),
 }));
 

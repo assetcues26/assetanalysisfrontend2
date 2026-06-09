@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
@@ -14,14 +14,15 @@ import { useHistory } from '../hooks/useHistory';
 import { useSession } from '../hooks/useSession';
 import { useApp } from '../context/AppContext';
 import { analyzeImages } from '../services/analysisService';
+import { abortActiveLocalAnalyze } from '../services/assetAnalysisApi';
 import { fetchCaptureSession } from '../services/sessionApi';
 
-const ANALYSIS_TIMEOUT_MS = 120_000;
+const ANALYSIS_TIMEOUT_MS = 60_000;
 
 function withTimeout(promise, ms) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error('Analysis is taking longer than expected. Please try again.')),
+      () => reject(new Error('Analysis timed out after 60 seconds. Cancel and try again.')),
       ms,
     );
     promise
@@ -43,15 +44,17 @@ export function ProcessingPage() {
 
   const { batchImages, batchCount, clearBatch } = useMergedBatch();
   const { addEntry } = useHistory();
-  const { attachToken, clearSession } = useSession();
+  const { attachToken, clearSession, cancelAnalysis } = useSession();
   const { setLastResult, setAnalysisError, analysisError, uploadProcessingMode } = useApp();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [sessionImageCount, setSessionImageCount] = useState(0);
   const runIdRef = useRef(0);
   const completedRef = useRef(false);
   const startedBatchKeyRef = useRef(null);
   const sawAnalyzingRef = useRef(false);
   const analyzingSinceRef = useRef(null);
+  const pollStoppedRef = useRef(false);
 
   const batchKey = useMemo(
     () => batchImages.map((img) => img.id).sort().join('|'),
@@ -65,6 +68,32 @@ export function ProcessingPage() {
 
   const analyzableCount = readyImages.length;
 
+  const handleCancel = useCallback(
+    async ({ clearImages = false } = {}) => {
+      setCancelling(true);
+      pollStoppedRef.current = true;
+      runIdRef.current += 1;
+
+      try {
+        if (sessionToken) {
+          await cancelAnalysis({ clearImages });
+          setAnalysisError(null);
+          setIsAnalyzing(false);
+          navigate(clearImages || batchCount === 0 ? '/upload' : '/batch', { replace: true });
+          return;
+        }
+
+        abortActiveLocalAnalyze();
+        setAnalysisError(null);
+        setIsAnalyzing(false);
+        navigate('/batch', { replace: true });
+      } finally {
+        setCancelling(false);
+      }
+    },
+    [sessionToken, cancelAnalysis, navigate, batchCount, setAnalysisError],
+  );
+
   useEffect(() => {
     if (sessionToken) {
       attachToken(sessionToken);
@@ -75,25 +104,28 @@ export function ProcessingPage() {
     if (!sessionToken) return undefined;
 
     let cancelled = false;
+    pollStoppedRef.current = false;
     setIsAnalyzing(true);
     setAnalysisError(null);
     completedRef.current = false;
     sawAnalyzingRef.current = false;
+    analyzingSinceRef.current = null;
 
     const poll = async () => {
+      if (pollStoppedRef.current || cancelled) return;
       try {
         const data = await fetchCaptureSession(sessionToken);
-        if (cancelled) return;
+        if (cancelled || pollStoppedRef.current) return;
         setSessionImageCount(data.image_count || 0);
 
         if (data.status === 'analyzing') {
           sawAnalyzingRef.current = true;
           if (!analyzingSinceRef.current) {
             analyzingSinceRef.current = Date.now();
-          }
-          if (Date.now() - analyzingSinceRef.current > ANALYSIS_TIMEOUT_MS) {
-            setAnalysisError('Analysis timed out. Return to batch and try again.');
+          } else if (Date.now() - analyzingSinceRef.current > ANALYSIS_TIMEOUT_MS) {
+            setAnalysisError('Analysis timed out after 60 seconds. Cancel and try again.');
             setIsAnalyzing(false);
+            pollStoppedRef.current = true;
           }
         }
 
@@ -108,17 +140,20 @@ export function ProcessingPage() {
         if (data.status === 'expired') {
           setAnalysisError('This scan session has expired. Start a new session on your computer.');
           setIsAnalyzing(false);
+          pollStoppedRef.current = true;
           return;
         }
 
         if (data.status === 'active' && sawAnalyzingRef.current) {
-          setAnalysisError('Analysis was interrupted. Return to batch and try again.');
+          setAnalysisError('Analysis was interrupted. Cancel or return to batch and try again.');
           setIsAnalyzing(false);
+          pollStoppedRef.current = true;
         }
       } catch (err) {
-        if (!cancelled) {
+        if (!cancelled && !pollStoppedRef.current) {
           setAnalysisError(err.message || 'Could not track session analysis');
           setIsAnalyzing(false);
+          pollStoppedRef.current = true;
         }
       }
     };
@@ -197,6 +232,8 @@ export function ProcessingPage() {
     setAnalysisError,
     clearBatch,
     navigate,
+    batchCount,
+    isAnalyzing,
   ]);
 
   const displayCount = sessionToken ? sessionImageCount : analyzableCount;
@@ -209,11 +246,25 @@ export function ProcessingPage() {
         <AlertCircle size={56} className="text-red-400" />
         <h1 className="text-xl font-bold text-gray-900">Analysis failed</h1>
         <p className="max-w-md text-center text-gray-600">{analysisError}</p>
-        <p className="max-w-md text-center text-sm text-gray-500">
-          You can analyze 1–10 images per batch (collage or multi-image mode). Check processing
-          settings on the home page if one mode fails.
-        </p>
-        <Button onClick={() => navigate(sessionToken ? '/upload' : '/batch')}>Try Again</Button>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button
+            variant="outline"
+            disabled={cancelling}
+            onClick={() => handleCancel({ clearImages: false })}
+          >
+            {cancelling ? 'Cancelling…' : 'Cancel analysis'}
+          </Button>
+          {sessionToken && (
+            <Button
+              variant="destructive"
+              disabled={cancelling}
+              onClick={() => handleCancel({ clearImages: true })}
+            >
+              Cancel & clear images
+            </Button>
+          )}
+          <Button onClick={() => navigate(sessionToken ? '/batch' : '/batch')}>Back to batch</Button>
+        </div>
       </div>
     );
   }
@@ -228,11 +279,28 @@ export function ProcessingPage() {
         >
           <ProcessingAnimation />
           <p className="mt-6 text-center text-sm text-gray-600">
-            Analyzing {displayCount} image{displayCount === 1 ? '' : 's'}… This may take up to a
-            minute.
+            Analyzing {displayCount} image{displayCount === 1 ? '' : 's'}… Usually under a minute.
           </p>
           <div className="mt-10 w-full max-w-md">
             <StatusCycler />
+          </div>
+          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+            <Button
+              variant="outline"
+              disabled={cancelling}
+              onClick={() => handleCancel({ clearImages: false })}
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel analysis'}
+            </Button>
+            {sessionToken && (
+              <Button
+                variant="destructive"
+                disabled={cancelling}
+                onClick={() => handleCancel({ clearImages: true })}
+              >
+                Cancel & clear images
+              </Button>
+            )}
           </div>
         </motion.div>
 

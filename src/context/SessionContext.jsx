@@ -13,6 +13,7 @@ import { useApp } from './AppContext';
 import { useBatchContext } from './BatchContext';
 import {
   analyzeCaptureSession,
+  cancelCaptureSessionAnalysis,
   createCaptureSession,
   deleteSessionImage,
   fetchCaptureSession,
@@ -37,6 +38,7 @@ export function SessionProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(false);
   const completedHandledRef = useRef(null);
+  const analysisCancelledRef = useRef(false);
 
   const refreshSession = useCallback(async (activeToken) => {
     if (!activeToken) return null;
@@ -49,11 +51,13 @@ export function SessionProvider({ children }) {
     setToken(null);
     setSession(null);
     completedHandledRef.current = null;
+    analysisCancelledRef.current = false;
   }, []);
 
   const attachToken = useCallback((activeToken) => {
     setToken(activeToken);
     completedHandledRef.current = null;
+    analysisCancelledRef.current = false;
   }, []);
 
   const startSession = useCallback(async () => {
@@ -69,6 +73,7 @@ export function SessionProvider({ children }) {
       const activeToken = created.session_token;
       setToken(activeToken);
       setSession(created);
+      analysisCancelledRef.current = false;
 
       if (batchImages.length > 0) {
         const files = batchImages.map((img) => img.file).filter((f) => f instanceof File);
@@ -133,17 +138,43 @@ export function SessionProvider({ children }) {
 
   const startAnalyze = useCallback(async () => {
     if (!token) return null;
+    analysisCancelledRef.current = false;
     try {
       const result = await analyzeCaptureSession(token);
+      if (analysisCancelledRef.current) return null;
       if (result.status === 'analyzing' || result.status === 'completed') {
         await refreshSession(token);
       }
       return result;
     } catch (err) {
+      if (analysisCancelledRef.current) return null;
       showToast(err?.message || 'Analysis could not start', 'error');
       return null;
     }
   }, [token, refreshSession, showToast]);
+
+  const cancelAnalysis = useCallback(
+    async ({ clearImages = false } = {}) => {
+      if (!token) return null;
+      analysisCancelledRef.current = true;
+      try {
+        const updated = await cancelCaptureSessionAnalysis(token, { clearImages });
+        setSession(updated);
+        if (clearImages) {
+          clearBatch();
+        }
+        showToast(
+          clearImages ? 'Analysis cancelled and images cleared' : 'Analysis cancelled',
+          'success',
+        );
+        return updated;
+      } catch (err) {
+        showToast(err?.message || 'Could not cancel analysis', 'error');
+        return null;
+      }
+    },
+    [token, clearBatch, showToast],
+  );
 
   useEffect(() => {
     if (!token || !enabled) return undefined;
@@ -156,7 +187,7 @@ export function SessionProvider({ children }) {
         if (cancelled) return;
         setSession(data);
 
-        if (data.status === 'analyzing') {
+        if (data.status === 'analyzing' && !analysisCancelledRef.current) {
           const onLaptopSyncPage = LAPTOP_SYNC_PATHS.some((p) =>
             location.pathname.startsWith(p),
           );
@@ -188,6 +219,7 @@ export function SessionProvider({ children }) {
   }, [token, enabled, location.pathname, navigate, clearBatch, clearSession]);
 
   const isSessionActive = Boolean(token && session?.status === 'active');
+  const isSessionAnalyzing = Boolean(token && session?.status === 'analyzing');
   const hasSessionBatch = Boolean(
     token && session && ['active', 'analyzing'].includes(session.status),
   );
@@ -202,6 +234,7 @@ export function SessionProvider({ children }) {
       sessionImages,
       sessionCount,
       isSessionActive,
+      isSessionAnalyzing,
       hasSessionBatch,
       loading,
       maxImages,
@@ -210,6 +243,7 @@ export function SessionProvider({ children }) {
       uploadImage,
       removeImage,
       startAnalyze,
+      cancelAnalysis,
       clearSession,
       attachToken,
     }),
@@ -220,6 +254,7 @@ export function SessionProvider({ children }) {
       sessionImages,
       sessionCount,
       isSessionActive,
+      isSessionAnalyzing,
       hasSessionBatch,
       loading,
       maxImages,
@@ -228,6 +263,7 @@ export function SessionProvider({ children }) {
       uploadImage,
       removeImage,
       startAnalyze,
+      cancelAnalysis,
       clearSession,
       attachToken,
     ],

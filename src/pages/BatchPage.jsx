@@ -26,8 +26,10 @@ export function BatchPage() {
     hasSessionImages,
     clearBatch,
   } = useMergedBatch();
-  const { isSessionActive, token, startAnalyze, uploadImage } = useSession();
+  const { isSessionActive, isSessionAnalyzing, token, startAnalyze, uploadImage, cancelAnalysis } =
+    useSession();
   const [proceeding, setProceeding] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   useEffect(() => {
     if (batchCount === 0) {
@@ -55,6 +57,41 @@ export function BatchPage() {
           <div className="mb-6">
             <AddFromPhonePanel variant="compact" />
           </div>
+
+          {isSessionAnalyzing && (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="text-sm font-medium text-amber-900">Analysis in progress</p>
+              <p className="mt-1 text-xs text-amber-800">
+                Images are locked until you cancel. You can delete them after cancelling.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={cancelling}
+                  onClick={async () => {
+                    setCancelling(true);
+                    await cancelAnalysis({ clearImages: false });
+                    setCancelling(false);
+                  }}
+                >
+                  {cancelling ? 'Cancelling…' : 'Cancel analysis'}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={cancelling}
+                  onClick={async () => {
+                    setCancelling(true);
+                    await cancelAnalysis({ clearImages: true });
+                    setCancelling(false);
+                  }}
+                >
+                  Cancel & clear all
+                </Button>
+              </div>
+            </div>
+          )}
 
           <motion.div
             key={batchCount}

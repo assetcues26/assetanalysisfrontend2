@@ -13,7 +13,8 @@ import { useMobileSession } from '../../hooks/useMobileSession';
 export function MobileProcessingPage() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { session, imageCount, error, isAnalyzing } = useMobileSession(token);
+  const { session, imageCount, error, isAnalyzing, cancelling, cancelAnalysis } =
+    useMobileSession(token);
 
   if (error) {
     return (
@@ -21,9 +22,25 @@ export function MobileProcessingPage() {
         <AlertCircle size={48} className="text-red-400" aria-hidden />
         <h1 className="text-lg font-bold text-gray-900">Analysis failed</h1>
         <p className="max-w-sm text-center text-sm text-gray-600">{error}</p>
-        <Button variant="primary" onClick={() => navigate(`/scan/${token}/done`)}>
-          Try again
-        </Button>
+        <div className="flex w-full max-w-sm flex-col gap-3">
+          <Button
+            variant="outline"
+            disabled={cancelling}
+            onClick={() => cancelAnalysis({ clearImages: false })}
+          >
+            {cancelling ? 'Cancelling…' : 'Cancel analysis'}
+          </Button>
+          <Button
+            variant="destructive"
+            disabled={cancelling}
+            onClick={() => cancelAnalysis({ clearImages: true })}
+          >
+            Cancel & clear images
+          </Button>
+          <Button variant="ghost" onClick={() => navigate(`/scan/${token}/done`)}>
+            Back
+          </Button>
+        </div>
       </div>
     );
   }
@@ -43,10 +60,26 @@ export function MobileProcessingPage() {
               : 'Preparing analysis…'}
           </p>
           <p className="mt-2 text-center text-xs text-gray-500">
-            This usually takes under a minute. Keep this tab open.
+            Usually under a minute. Tap cancel to stop.
           </p>
           <div className="mt-10 w-full max-w-md">
             <StatusCycler />
+          </div>
+          <div className="mt-8 flex w-full max-w-sm flex-col gap-3">
+            <Button
+              variant="outline"
+              disabled={cancelling}
+              onClick={() => cancelAnalysis({ clearImages: false })}
+            >
+              {cancelling ? 'Cancelling…' : 'Cancel analysis'}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={cancelling}
+              onClick={() => cancelAnalysis({ clearImages: true })}
+            >
+              Cancel & clear images
+            </Button>
           </div>
         </motion.div>
         <div className="absolute bottom-16 left-6 right-6 z-10 mx-auto max-w-2xl">
