@@ -59,6 +59,18 @@ function conditionVariant(label) {
   return 'default';
 }
 
+function sentenceCase(text) {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function repairVariant(text) {
+  const lower = (text || '').toLowerCase();
+  if (/no repair|none needed|not (needed|required)/.test(lower)) return 'success';
+  if (/replace|severe|urgent|immediate/.test(lower)) return 'warning';
+  return 'default';
+}
+
 export function AssetResultCard({
   result,
   images = [],
@@ -104,6 +116,16 @@ export function AssetResultCard({
       : null;
   const tagHighlight =
     rawTag && rawTag.length > 18 ? `${rawTag.slice(0, 16)}…` : rawTag || 'Not detected';
+  const repairRecommendation =
+    result.conditionDetail?.repair_recommendation &&
+    result.conditionDetail.repair_recommendation !== '—'
+      ? sentenceCase(result.conditionDetail.repair_recommendation)
+      : null;
+  const repairShort =
+    repairRecommendation && repairRecommendation.length > 40
+      ? `${repairRecommendation.slice(0, 38)}…`
+      : repairRecommendation;
+  const nbvExceedsAsIs = result.valuation?.nbv_exceeds_as_is;
   const erpVerify = result.erp_verification;
   const tagMatchLabel =
     erpVerify != null
@@ -196,9 +218,7 @@ export function AssetResultCard({
       />
 
       <div className="space-y-6 px-6 py-6 sm:px-8">
-        <div
-          className={`grid gap-3 sm:grid-cols-2 ${isErpBookNbv && hasBookNbv ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
-        >
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <HighlightMetric
             label="Condition"
             value={conditionLabel}
@@ -244,6 +264,26 @@ export function AssetResultCard({
             hint={modelYearSummary && ageSummary ? `Year ${modelYearSummary}` : undefined}
             variant="default"
           />
+          {repairShort && (
+            <HighlightMetric
+              label="Repair recommendation"
+              value={repairShort}
+              hint="See condition & damage"
+              variant={repairVariant(repairRecommendation)}
+            />
+          )}
+          {nbvExceedsAsIs != null && (
+            <HighlightMetric
+              label="NBV vs current estimate"
+              value={nbvExceedsAsIs ? 'NBV above estimate' : 'Within estimate'}
+              hint={
+                nbvExceedsAsIs
+                  ? 'Book NBV exceeds damage-adjusted market value'
+                  : 'Book NBV is at or below market value'
+              }
+              variant={nbvExceedsAsIs ? 'warning' : 'success'}
+            />
+          )}
         </div>
 
         <ResultPanel
