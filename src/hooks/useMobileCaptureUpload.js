@@ -1,8 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { uploadSessionImagesPrepared } from '../services/sessionApi';
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
+import {
+  enqueueMobileCapture,
+  getMobileCaptureQueueSnapshot,
+  runMobileCaptureQueue,
+  seedMobileCaptureConfirmedCount,
+  subscribeMobileCaptureQueue,
+} from './mobileCaptureUploadQueue';
 
 /**
- * Queue camera captures for compress + session upload while staying on the camera screen.
+ * Queue camera captures for compress + session upload. The queue survives navigation
+ * so uploads keep syncing after the user taps Done.
  * @param {{
  *   token?: string,
  *   session?: { images?: Array<{ byte_size?: number | null }> } | null,
@@ -22,70 +29,71 @@ export function useMobileCaptureUpload({
   canAdd = false,
   showToast,
 }) {
-  const queueRef = useRef([]);
-  const processingRef = useRef(false);
   const sessionRef = useRef(session);
   sessionRef.current = session;
 
-  const [queueLength, setQueueLength] = useState(0);
-  const [uploading, setUploading] = useState(false);
+  const handlersRef = useRef({ refresh, showToast });
+  handlersRef.current = { refresh, showToast };
 
-  const pendingCount = queueLength + (uploading ? 1 : 0);
-  const canCaptureMore = Boolean(
-    token && canAdd && imageCount + pendingCount < maxImages,
+  const subscribe = useCallback(
+    (listener) => (token ? subscribeMobileCaptureQueue(token, listener) : () => {}),
+    [token],
   );
 
-  const processQueue = useCallback(async () => {
-    if (processingRef.current || !token) return;
-    processingRef.current = true;
-    setUploading(true);
+  const emptySnapshotRef = useRef({
+    queueLength: 0,
+    uploading: false,
+    pendingCount: 0,
+    confirmedCount: 0,
+  });
 
-    while (queueRef.current.length > 0) {
-      const file = queueRef.current[0];
-      try {
-        const updated = await uploadSessionImagesPrepared(token, file, 'mobile', {
-          sessionImages: sessionRef.current?.images,
-        });
-        sessionRef.current = updated;
-        if (refresh) {
-          await refresh();
-        }
-        queueRef.current.shift();
-        setQueueLength(queueRef.current.length);
-      } catch (err) {
-        // Drop the failed capture but keep syncing the rest of the queue.
-        queueRef.current.shift();
-        setQueueLength(queueRef.current.length);
-        showToast?.(err?.message || 'Upload failed', 'error');
-      }
-    }
+  const getSnapshot = useCallback(
+    () => (token ? getMobileCaptureQueueSnapshot(token) : emptySnapshotRef.current),
+    [token],
+  );
 
-    processingRef.current = false;
-    setUploading(false);
-  }, [token, refresh, showToast]);
+  const queueSnapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+
+  useEffect(() => {
+    if (!token) return;
+    seedMobileCaptureConfirmedCount(token, imageCount);
+  }, [token, imageCount]);
+
+  useEffect(() => {
+    if (!token) return;
+    runMobileCaptureQueue(token, {
+      getSessionImages: () => sessionRef.current?.images,
+      refresh: handlersRef.current.refresh,
+      showToast: handlersRef.current.showToast,
+    });
+  }, [token]);
+
+  const displayImageCount = Math.max(imageCount, queueSnapshot.confirmedCount);
+  const pendingCount = queueSnapshot.pendingCount;
+  const canCaptureMore = Boolean(
+    token && canAdd && displayImageCount + pendingCount < maxImages,
+  );
 
   const enqueueCapture = useCallback(
     (file) => {
-      if (!file || !canCaptureMore) return false;
-      queueRef.current.push(file);
-      setQueueLength(queueRef.current.length);
-      processQueue();
+      if (!file || !token || !canCaptureMore) return false;
+      enqueueMobileCapture(token, file, {
+        getSessionImages: () => sessionRef.current?.images,
+        refresh: handlersRef.current.refresh,
+        showToast: handlersRef.current.showToast,
+      });
       return true;
     },
-    [canCaptureMore, processQueue],
+    [token, canCaptureMore],
   );
-
-  useEffect(() => {
-    if (queueRef.current.length > 0) {
-      processQueue();
-    }
-  }, [processQueue]);
 
   return {
     enqueueCapture,
-    queueLength,
-    uploading,
+    queueLength: queueSnapshot.queueLength,
+    uploading: queueSnapshot.uploading,
     pendingCount,
+    displayImageCount,
     canCaptureMore,
+    isSyncing: pendingCount > 0,
   };
 }

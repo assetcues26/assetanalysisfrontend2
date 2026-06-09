@@ -66,6 +66,19 @@ export function CameraProvider({ children }) {
     permissionBlockedRef.current = false;
   }, []);
 
+  const applyTorch = useCallback(async (enabled) => {
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track?.getCapabilities) return false;
+    const caps = track.getCapabilities();
+    if (!caps.torch) return false;
+    try {
+      await track.applyConstraints({ advanced: [{ torch: enabled }] });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   const applyZoomToTrack = useCallback(async (level) => {
     const track = streamRef.current?.getVideoTracks()[0];
     if (!track?.getCapabilities) {
@@ -191,9 +204,30 @@ export function CameraProvider({ children }) {
     });
   }, []);
 
+  useEffect(() => {
+    if (!isReady || facingMode !== 'environment') {
+      applyTorch(false);
+      return;
+    }
+    if (flashMode === 'on') {
+      applyTorch(true);
+      return;
+    }
+    applyTorch(false);
+  }, [flashMode, facingMode, isReady, applyTorch]);
+
   const captureFrame = useCallback(async () => {
     const video = videoRef.current;
     if (!video || !isReady) return null;
+
+    const shouldPulseTorch =
+      facingMode === 'environment' && (flashMode === 'on' || flashMode === 'auto');
+    if (shouldPulseTorch) {
+      await applyTorch(true);
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, 120);
+      });
+    }
 
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth || 1280;
@@ -220,7 +254,7 @@ export function CameraProvider({ children }) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     }
 
-    return new Promise((resolve) => {
+    const file = await new Promise((resolve) => {
       canvas.toBlob(
         (blob) => {
           if (!blob) {
@@ -235,7 +269,13 @@ export function CameraProvider({ children }) {
         0.92,
       );
     });
-  }, [facingMode, isReady, zoomLevel, usesNativeZoom]);
+
+    if (shouldPulseTorch && flashMode !== 'on') {
+      await applyTorch(false);
+    }
+
+    return file;
+  }, [facingMode, flashMode, isReady, zoomLevel, usesNativeZoom, applyTorch]);
 
   const previewZoom = usesNativeZoom ? 1 : zoomLevel;
 
