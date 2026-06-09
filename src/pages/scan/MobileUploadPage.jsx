@@ -14,7 +14,7 @@ import { useApp } from '../../context/AppContext';
 
 import { useMobileSession } from '../../hooks/useMobileSession';
 
-import { fetchCaptureSession, uploadSessionImagesPrepared } from '../../services/sessionApi';
+import { uploadSessionImagesPrepared } from '../../services/sessionApi';
 
 import { UPLOAD_MAX_TOTAL_MB } from '../../utils/imageCompression';
 
@@ -28,7 +28,7 @@ export function MobileUploadPage() {
 
   const { showToast } = useApp();
 
-  const { maxImages, imageCount, canAdd, refresh } = useMobileSession(token);
+  const { maxImages, imageCount, canAdd, refresh, session } = useMobileSession(token);
 
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(null);
@@ -63,11 +63,8 @@ export function MobileUploadPage() {
       }
 
       if (accepted.length > 0) {
-
-        const session = await fetchCaptureSession(token);
-
         await uploadSessionImagesPrepared(token, accepted, 'mobile', {
-          sessionImages: session.images,
+          sessionImages: session?.images,
           onProgress: ({ phase, current, total }) => {
             const action = phase === 'compress' ? 'Preparing' : 'Uploading';
             setProgress(

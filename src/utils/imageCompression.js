@@ -88,7 +88,8 @@ async function compressWithBudget(files, maxTotalBytes, existingBytes, options =
     const compressed = [];
     for (const file of files) {
       const perFileCap = Math.max(0.05, perFileMb) * BYTES_PER_MB;
-      if (fast && file.size <= perFileCap) {
+      const mobileSkipBytes = 700_000;
+      if (fast && file.size <= Math.min(perFileCap, mobileSkipBytes)) {
         compressed.push(file);
         continue;
       }

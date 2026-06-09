@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   analyzeCaptureSession,
@@ -6,7 +6,8 @@ import {
   isSessionUnavailableError,
 } from '../services/sessionApi';
 
-const POLL_MS = 2500;
+const POLL_MS = 1000;
+const ANALYZE_STALE_MS = 120_000;
 
 /**
  * Poll capture session on mobile routes.
@@ -18,19 +19,61 @@ export function useMobileSession(token) {
   const [session, setSession] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const sawAnalyzingRef = useRef(false);
+  const analyzingSinceRef = useRef(null);
+  const pathnameRef = useRef(location.pathname);
+  pathnameRef.current = location.pathname;
+
+  const handleSessionStatus = useCallback(
+    (data) => {
+      if (!data) return;
+
+      if (data.status === 'analyzing') {
+        sawAnalyzingRef.current = true;
+        if (!analyzingSinceRef.current) {
+          analyzingSinceRef.current = Date.now();
+        }
+        const elapsed = Date.now() - analyzingSinceRef.current;
+        if (elapsed > ANALYZE_STALE_MS) {
+          setError('Analysis timed out. Go back and try again.');
+        }
+        if (!pathnameRef.current.includes('/processing')) {
+          navigate(`/scan/${token}/processing`, { replace: true });
+        }
+        return;
+      }
+
+      analyzingSinceRef.current = null;
+
+      if (data.status === 'active' && sawAnalyzingRef.current) {
+        sawAnalyzingRef.current = false;
+        setError('Analysis was interrupted. Go back and try again.');
+        return;
+      }
+
+      if (data.status === 'completed' && data.entry_id) {
+        sawAnalyzingRef.current = false;
+        navigate(`/result/${data.entry_id}`, { replace: true });
+      }
+    },
+    [navigate, token],
+  );
 
   const refresh = useCallback(async () => {
     if (!token) return null;
     try {
       const data = await fetchCaptureSession(token);
       setSession(data);
-      setError(null);
+      if (data.status !== 'expired') {
+        setError(null);
+      }
+      handleSessionStatus(data);
       return data;
     } catch (err) {
       setError(err?.message || 'Session unavailable');
       return null;
     }
-  }, [token]);
+  }, [token, handleSessionStatus]);
 
   useEffect(() => {
     if (!token) {
@@ -41,6 +84,8 @@ export function useMobileSession(token) {
 
     let cancelled = false;
     setLoading(true);
+    sawAnalyzingRef.current = false;
+    analyzingSinceRef.current = null;
 
     const load = async () => {
       const data = await refresh();
@@ -48,34 +93,31 @@ export function useMobileSession(token) {
       if (data?.status === 'expired') {
         setError('This scan link has expired. Start a new scan on your computer.');
       }
-      if (data?.status === 'completed' && data.entry_id) {
-        navigate(`/result/${data.entry_id}`, { replace: true });
-      }
     };
 
     load();
     const id = setInterval(() => {
-      refresh().then((data) => {
-        if (data?.status === 'analyzing' && !location.pathname.includes('/processing')) {
-          navigate(`/scan/${token}/processing`, { replace: true });
-        }
-        if (data?.status === 'completed' && data.entry_id) {
-          navigate(`/result/${data.entry_id}`, { replace: true });
-        }
-      });
+      refresh();
     }, POLL_MS);
 
     return () => {
       cancelled = true;
       clearInterval(id);
     };
-  }, [token, refresh, navigate]);
+  }, [token, refresh]);
 
   const startAnalyze = useCallback(async () => {
     if (!token) return null;
+    setError(null);
+    sawAnalyzingRef.current = false;
+    analyzingSinceRef.current = null;
     try {
       const result = await analyzeCaptureSession(token);
       await refresh();
+      if (result.status === 'completed' && result.entry_id) {
+        navigate(`/result/${result.entry_id}`, { replace: true });
+        return result;
+      }
       if (result.status === 'analyzing' || result.status === 'completed') {
         navigate(`/scan/${token}/processing`, { replace: true });
       }
@@ -96,5 +138,6 @@ export function useMobileSession(token) {
     imageCount: session?.image_count ?? 0,
     maxImages: session?.max_images ?? 10,
     canAdd: session?.status === 'active',
+    isAnalyzing: session?.status === 'analyzing',
   };
 }

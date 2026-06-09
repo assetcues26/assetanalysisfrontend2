@@ -51,6 +51,7 @@ export function ProcessingPage() {
   const completedRef = useRef(false);
   const startedBatchKeyRef = useRef(null);
   const sawAnalyzingRef = useRef(false);
+  const analyzingSinceRef = useRef(null);
 
   const batchKey = useMemo(
     () => batchImages.map((img) => img.id).sort().join('|'),
@@ -87,6 +88,13 @@ export function ProcessingPage() {
 
         if (data.status === 'analyzing') {
           sawAnalyzingRef.current = true;
+          if (!analyzingSinceRef.current) {
+            analyzingSinceRef.current = Date.now();
+          }
+          if (Date.now() - analyzingSinceRef.current > ANALYSIS_TIMEOUT_MS) {
+            setAnalysisError('Analysis timed out. Return to batch and try again.');
+            setIsAnalyzing(false);
+          }
         }
 
         if (data.status === 'completed' && data.entry_id) {
@@ -116,7 +124,7 @@ export function ProcessingPage() {
     };
 
     poll();
-    const id = setInterval(poll, 2500);
+    const id = setInterval(poll, 1000);
     return () => {
       cancelled = true;
       clearInterval(id);

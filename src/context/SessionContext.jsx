@@ -20,7 +20,7 @@ import {
   uploadSessionImagesPrepared,
 } from '../services/sessionApi';
 
-const POLL_MS = 2500;
+const POLL_MS = 1000;
 
 const SessionContext = createContext(null);
 

@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 
 import { useApp } from '../../context/AppContext';
 
-import { fetchCaptureSession, uploadSessionImagesPrepared } from '../../services/sessionApi';
+import { uploadSessionImagesPrepared } from '../../services/sessionApi';
+import { useMobileSession } from '../../hooks/useMobileSession';
 
 
 
@@ -25,6 +26,7 @@ export function MobilePreviewPage() {
   const location = useLocation();
 
   const { showToast } = useApp();
+  const { session } = useMobileSession(token);
 
   const [payload, setPayload] = useState(location.state);
 
@@ -68,11 +70,9 @@ export function MobilePreviewPage() {
 
     try {
 
-      const session = await fetchCaptureSession(token);
-
       await uploadSessionImagesPrepared(token, payload.file, 'mobile', {
 
-        sessionImages: session.images,
+        sessionImages: session?.images,
 
       });
 

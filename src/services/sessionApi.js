@@ -9,6 +9,7 @@ import { prepareImagesForUpload, sumSessionImageBytes } from '../utils/imageComp
 const SESSIONS_BASE = `${ASSET_ANALYSIS_API_BASE}/v1/sessions`;
 
 const UPLOAD_TIMEOUT_MS = 90_000;
+const ANALYZE_TIMEOUT_MS = 120_000;
 
 function isMobileDevice() {
   if (typeof navigator === 'undefined') return false;
@@ -200,13 +201,19 @@ export async function uploadSessionImagesPrepared(token, files, source = 'mobile
     return uploadSessionImages(token, prepared, source);
   }
 
-  let lastResult;
+  onProgress?.({ phase: 'compress', current: 0, total: list.length });
+  const prepared = [];
   for (let i = 0; i < list.length; i += 1) {
+    const batch = await prepareImagesForUpload(list[i], { existingBytes, fast: true });
+    prepared.push(batch[0]);
+    existingBytes += batch[0].size;
     onProgress?.({ phase: 'compress', current: i + 1, total: list.length });
-    const prepared = await prepareImagesForUpload(list[i], { existingBytes, fast: true });
-    onProgress?.({ phase: 'upload', current: i + 1, total: list.length });
-    lastResult = await uploadSessionImages(token, prepared, source);
-    existingBytes += prepared.reduce((sum, file) => sum + file.size, 0);
+  }
+
+  let lastResult;
+  for (let i = 0; i < prepared.length; i += 1) {
+    onProgress?.({ phase: 'upload', current: i + 1, total: prepared.length });
+    lastResult = await uploadSessionImages(token, prepared[i], source);
   }
   return lastResult;
 }
@@ -254,33 +261,35 @@ export async function deleteSessionImage(token, imageId) {
  */
 
 export async function analyzeCaptureSession(token, options = {}) {
-
   const formData = new FormData();
-
   formData.append('locale', options.locale || 'en-IN');
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
 
-
-  const response = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(token)}/analyze`, {
-
-    method: 'POST',
-
-    headers: sessionHeaders(),
-
-    body: formData,
-
-  });
-
-  const data = await parseJsonResponse(response);
-
-  if (!response.ok) {
-
-    throw new Error(formatApiErrorMessage(data, response.status));
-
+  try {
+    const response = await fetch(`${SESSIONS_BASE}/${encodeURIComponent(token)}/analyze`, {
+      method: 'POST',
+      headers: sessionHeaders(),
+      body: formData,
+      signal: controller.signal,
+    });
+    const data = await parseJsonResponse(response);
+    if (!response.ok) {
+      throw new Error(formatApiErrorMessage(data, response.status));
+    }
+    return data;
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Analysis timed out — try again with fewer images.');
+    }
+    if (err?.name === 'TypeError') {
+      throw new Error('Network error during analysis — check your connection.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  return data;
-
 }
 
 

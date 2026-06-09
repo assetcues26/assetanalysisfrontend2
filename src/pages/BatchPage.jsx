@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ImageOff } from 'lucide-react';
@@ -17,9 +17,17 @@ import { AddFromPhonePanel } from '../components/session/AddFromPhonePanel';
 export function BatchPage() {
   const navigate = useNavigate();
   const { setLastResult, setAnalysisError } = useApp();
-  const { batchImages, batchCount, removeImage, maxImages, hasLocalFiles, hasSessionImages } =
-    useMergedBatch();
-  const { isSessionActive, token, startAnalyze } = useSession();
+  const {
+    batchImages,
+    batchCount,
+    removeImage,
+    maxImages,
+    hasLocalFiles,
+    hasSessionImages,
+    clearBatch,
+  } = useMergedBatch();
+  const { isSessionActive, token, startAnalyze, uploadImage } = useSession();
+  const [proceeding, setProceeding] = useState(false);
 
   useEffect(() => {
     if (batchCount === 0) {
@@ -107,25 +115,44 @@ export function BatchPage() {
           className="flex-[2]"
           label="Proceed to Analysis"
           count={batchCount}
-          disabled={batchCount === 0}
+          disabled={batchCount === 0 || proceeding}
           onClick={async () => {
             setLastResult(null);
             setAnalysisError(null);
-            if (hasLocalFiles) {
-              navigate('/processing');
-              return;
-            }
-            if (isSessionActive && token && hasSessionImages) {
-              const result = await startAnalyze();
-              if (
-                result &&
-                (result.status === 'analyzing' || result.status === 'completed')
-              ) {
-                navigate(`/processing?session=${encodeURIComponent(token)}`);
+            setProceeding(true);
+            try {
+              if (isSessionActive && token && (hasSessionImages || hasLocalFiles)) {
+                if (hasLocalFiles) {
+                  const files = batchImages
+                    .filter((img) => img.file instanceof File)
+                    .map((img) => img.file);
+                  if (files.length > 0) {
+                    const updated = await uploadImage(files, 'laptop');
+                    if (!updated) return;
+                    clearBatch();
+                  }
+                }
+                const result = await startAnalyze();
+                if (result?.status === 'completed' && result.entry_id) {
+                  navigate(`/result/${result.entry_id}`, { replace: true });
+                  return;
+                }
+                if (
+                  result &&
+                  (result.status === 'analyzing' || result.status === 'completed')
+                ) {
+                  navigate(`/processing?session=${encodeURIComponent(token)}`);
+                }
+                return;
               }
-              return;
+              if (hasLocalFiles) {
+                navigate('/processing');
+                return;
+              }
+              navigate('/processing');
+            } finally {
+              setProceeding(false);
             }
-            navigate('/processing');
           }}
         />
       </div>

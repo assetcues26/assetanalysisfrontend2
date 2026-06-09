@@ -15,6 +15,9 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+const mockUploadImage = vi.fn();
+const mockClearBatch = vi.fn();
+
 vi.mock('../hooks/useMergedBatch', () => ({
   useMergedBatch: () => ({
     batchImages: [{ id: '1', previewUrl: 'https://example.com/a.jpg', name: 'a.jpg' }],
@@ -23,6 +26,7 @@ vi.mock('../hooks/useMergedBatch', () => ({
     maxImages: 10,
     hasLocalFiles: false,
     hasSessionImages: true,
+    clearBatch: mockClearBatch,
   }),
 }));
 
@@ -31,6 +35,7 @@ vi.mock('../hooks/useSession', () => ({
     isSessionActive: true,
     token: 'session-token-abcdefghijklmnopqrstuvwxyz',
     startAnalyze: mockStartAnalyze,
+    uploadImage: mockUploadImage,
   }),
 }));
 
