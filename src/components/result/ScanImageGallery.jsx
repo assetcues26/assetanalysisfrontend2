@@ -1,14 +1,19 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 
-const thumbClass = (active, clickable) =>
+const thumbClass = (active, clickable, pressing = false) =>
   [
-    'touch-manipulation overflow-hidden rounded-lg border bg-white transition-shadow duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500',
-    clickable ? 'cursor-pointer' : 'cursor-default',
-    active
-      ? 'border-blue-500 shadow-md ring-2 ring-blue-400'
-      : clickable
-        ? 'border-gray-300 hover:border-blue-400 hover:shadow-md hover:ring-2 hover:ring-blue-200'
-        : 'border-gray-300',
+    'touch-manipulation overflow-hidden rounded-lg border bg-white transition-[transform,box-shadow,border-color] duration-100 ease-out focus:outline-none focus:ring-2 focus:ring-blue-500',
+    clickable
+      ? 'cursor-pointer active:scale-[0.92] sm:active:scale-[0.95]'
+      : 'cursor-default',
+    pressing && clickable
+      ? 'border-blue-400 shadow-md ring-2 ring-blue-300'
+      : active
+        ? 'border-blue-500 shadow-md ring-2 ring-blue-400'
+        : clickable
+          ? 'border-gray-300 hover:border-blue-400 hover:shadow-md hover:ring-2 hover:ring-blue-200'
+          : 'border-gray-300',
   ].join(' ');
 
 /**
@@ -109,26 +114,37 @@ function GalleryThumb({
   active = false,
   contain = false,
 }) {
+  const [pressing, setPressing] = useState(false);
   const clickable = Boolean(onImageClick);
+
+  const endPress = () => setPressing(false);
+  const startPress = () => {
+    if (clickable) setPressing(true);
+  };
 
   return (
     <motion.button
       type="button"
       onClick={() => onImageClick?.(lightboxIndex)}
-      whileTap={clickable ? { scale: 0.96 } : undefined}
+      onPointerDown={startPress}
+      onPointerUp={endPress}
+      onPointerCancel={endPress}
+      onPointerLeave={endPress}
+      whileTap={clickable ? { scale: 0.92 } : undefined}
       whileHover={clickable ? { scale: 1.02 } : undefined}
       transition={{ type: 'spring', stiffness: 420, damping: 28 }}
-      className={`${thumbClass(active, clickable)} ${contain ? 'rounded-xl' : ''}`}
+      className={`${thumbClass(active, clickable, pressing)} ${contain ? 'rounded-xl' : ''}`}
       aria-label={clickable ? `View ${label}` : label}
       aria-pressed={clickable && active ? true : undefined}
     >
       <img
         src={url}
         alt={label}
+        draggable={false}
         className={
           contain
-            ? 'mx-auto max-h-64 w-auto max-w-full object-contain'
-            : 'aspect-square w-full object-cover'
+            ? 'pointer-events-none mx-auto max-h-64 w-auto max-w-full select-none object-contain'
+            : 'pointer-events-none aspect-square w-full select-none object-cover'
         }
       />
     </motion.button>
