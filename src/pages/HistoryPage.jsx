@@ -30,7 +30,7 @@ export function HistoryPage() {
 
   const navigate = useNavigate();
 
-  const { history, deleteEntry, searchEntries, historyCount } = useHistory();
+  const { history, deleteEntry, searchEntries, historyCount, historyError, hydrated } = useHistory();
 
   const [activeTab, setActiveTab] = useState('Browse');
 
@@ -150,13 +150,22 @@ export function HistoryPage() {
 
 
 
+          {hydrated && historyError && historyCount === 0 ? (
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+              Could not load saved reports — {historyError}. Check your API connection and demo key
+              settings, then refresh the page.
+            </div>
+          ) : null}
+
           {historyCount === 0 ? (
 
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-gray-200/80 bg-white/60 px-4 py-14 text-center backdrop-blur-sm sm:py-16">
 
               <PackageOpen size={48} className="text-gray-600" />
 
-              <p className="text-gray-600">No assets scanned yet</p>
+              <p className="text-gray-600">
+                {historyError ? 'Saved reports could not be loaded' : 'No assets scanned yet'}
+              </p>
 
               <Button className="w-full max-w-xs sm:w-auto" onClick={() => navigate('/capture')}>
 

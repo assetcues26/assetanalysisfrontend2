@@ -80,6 +80,21 @@ export async function deleteHistoryEntry(entryId) {
 }
 
 /**
+ * True when an entry has full report fields (not a summary list row).
+ * @param {object | null | undefined} entry
+ */
+export function isFullHistoryEntry(entry) {
+  if (!entry) return false;
+  if (entry.conditionDetail || entry.apiResponse) return true;
+  return Boolean(
+    entry.asset_condition &&
+      entry.asset_condition !== '—' &&
+      entry.asset_description &&
+      entry.asset_description !== '—',
+  );
+}
+
+/**
  * Map list API row to summary entry for history cards.
  * @param {object} item
  */

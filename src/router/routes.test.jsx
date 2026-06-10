@@ -140,7 +140,7 @@ describe('AppRouter — route endpoints', () => {
     const viewButtons = screen.getAllByRole('button', { name: /View details/i });
     await user.click(viewButtons[0]);
     await waitFor(() => {
-      expect(screen.getByText(/Asset condition/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Overview' })).toBeInTheDocument();
     });
   });
 });

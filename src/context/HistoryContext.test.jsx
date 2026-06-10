@@ -5,6 +5,7 @@ import {
   useHistoryContext,
   stripLegacySeedEntries,
 } from './HistoryContext';
+import { hydrateListItem, isFullHistoryEntry } from '../services/historyApi';
 import { SEED_HISTORY } from '../utils/mockData';
 
 function mockHistoryFetch(items = []) {
@@ -21,20 +22,21 @@ function mockHistoryFetch(items = []) {
     }
 
     if (href.includes('/v1/history/')) {
+      const entryId = decodeURIComponent(href.split('/v1/history/')[1]?.split('?')[0] || 'detail-1');
       return {
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
         json: async () => ({
-          entry_id: 'detail-1',
-          request_id: 'detail-1',
+          entry_id: entryId,
+          request_id: entryId,
           processed_at: '2026-01-01T00:00:00Z',
           result_json: {
-            request_id: 'detail-1',
+            request_id: entryId,
             status: 'success',
             analysis_method: 'multi_image',
-            asset: { name: 'Detail Asset' },
-            condition: { grade: 'Good' },
+            asset: { name: 'Detail Asset', description: 'Full report description' },
+            condition: { grade: 'Good', summary: 'Good cosmetic condition' },
             identifiers: {},
             valuation: {},
             confidence: {},
@@ -177,5 +179,55 @@ describe('HistoryContext', () => {
 
     expect(fetched?.asset_name).toBe('Detail Asset');
     expect(result.current.getEntryById('detail-1')).toBeTruthy();
+  });
+
+  it('ensureEntry fetches detail for summary list rows after refresh', async () => {
+    mockHistoryFetch([
+      {
+        entry_id: 'summary-uuid-1',
+        request_id: 'summary-uuid-1',
+        asset_name: 'Summary Only',
+        asset_tag: 'TAG-9',
+        condition_grade: 'Good',
+        processed_at: '2026-01-02T00:00:00Z',
+      },
+    ]);
+
+    const { result } = renderHook(() => useHistoryContext(), { wrapper });
+    await waitFor(() => expect(result.current.historyCount).toBe(1));
+
+    const summary = result.current.getEntryById('summary-uuid-1');
+    expect(isFullHistoryEntry(summary)).toBe(false);
+    expect(hydrateListItem({
+      entry_id: 'summary-uuid-1',
+      request_id: 'summary-uuid-1',
+      asset_name: 'Summary Only',
+    }).asset_condition).toBeUndefined();
+
+    let fetched;
+    await act(async () => {
+      fetched = await result.current.ensureEntry('summary-uuid-1');
+    });
+
+    expect(fetched?.asset_name).toBe('Detail Asset');
+    expect(isFullHistoryEntry(result.current.getEntryById('summary-uuid-1'))).toBe(true);
+    expect(result.current.getEntryById('summary-uuid-1')?.asset_description).toBe(
+      'Full report description',
+    );
+  });
+
+  it('sets historyError when list API fails', async () => {
+    global.fetch = vi.fn(async () => ({
+      ok: false,
+      status: 401,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ detail: 'Invalid or missing demo API key' }),
+    }));
+
+    const { result } = renderHook(() => useHistoryContext(), { wrapper });
+    await waitFor(() => {
+      expect(result.current.hydrated).toBe(true);
+      expect(result.current.historyError).toMatch(/demo API key/i);
+    });
   });
 });

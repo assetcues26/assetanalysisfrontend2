@@ -13,6 +13,7 @@ import {
   fetchHistoryList,
   hydrateEntry,
   hydrateListItem,
+  isFullHistoryEntry,
   isHistoryUnavailableError,
 } from '../services/historyApi';
 
@@ -28,6 +29,7 @@ export function HistoryProvider({ children }) {
   const [history, setHistory] = useState([]);
   const [hydrated, setHydrated] = useState(false);
   const [historyApiEnabled, setHistoryApiEnabled] = useState(true);
+  const [historyError, setHistoryError] = useState(null);
   const [loadingEntryIds, setLoadingEntryIds] = useState(() => new Set());
 
   useEffect(() => {
@@ -40,11 +42,15 @@ export function HistoryProvider({ children }) {
         const items = (data.items || []).map(hydrateListItem);
         setHistory(stripLegacySeedEntries(items));
         setHistoryApiEnabled(true);
+        setHistoryError(null);
       } catch (err) {
         if (!cancelled) {
           if (isHistoryUnavailableError(err)) {
             setHistoryApiEnabled(false);
+            setHistoryError(null);
           } else {
+            const message = err?.message || 'Could not load saved reports';
+            setHistoryError(message);
             console.warn('Could not load history from API', err);
           }
           setHistory([]);
@@ -102,7 +108,7 @@ export function HistoryProvider({ children }) {
   const ensureEntry = useCallback(
     async (id) => {
       const cached = getEntryById(id);
-      if (cached?.conditionDetail || cached?.apiResponse) return cached;
+      if (isFullHistoryEntry(cached)) return cached;
       if (!historyApiEnabled || !id) return cached ?? null;
 
       setLoadingEntryIds((prev) => new Set(prev).add(id));
@@ -110,13 +116,11 @@ export function HistoryProvider({ children }) {
         const detail = await fetchHistoryEntry(id);
         const entry = hydrateEntry(detail);
         setHistory((prev) => {
-          const exists = prev.some(
-            (e) => e.id === entry.id || e.request_id === entry.request_id,
-          );
+          const matchesRequested = (e) =>
+            e.id === id || e.request_id === id || e.id === entry.id || e.request_id === entry.request_id;
+          const exists = prev.some(matchesRequested);
           if (exists) {
-            return prev.map((e) =>
-              e.id === entry.id || e.request_id === entry.request_id ? entry : e,
-            );
+            return prev.map((e) => (matchesRequested(e) ? { ...entry, id: entry.id || e.id } : e));
           }
           return [entry, ...prev];
         });
@@ -160,9 +164,13 @@ export function HistoryProvider({ children }) {
       const items = (data.items || []).map(hydrateListItem);
       setHistory(stripLegacySeedEntries(items));
       setHistoryApiEnabled(true);
+      setHistoryError(null);
     } catch (err) {
       if (isHistoryUnavailableError(err)) {
         setHistoryApiEnabled(false);
+        setHistoryError(null);
+      } else {
+        setHistoryError(err?.message || 'Could not load saved reports');
       }
       setHistory([]);
     } finally {
@@ -175,6 +183,7 @@ export function HistoryProvider({ children }) {
       history,
       hydrated,
       historyApiEnabled,
+      historyError,
       loadingEntryIds,
       addEntry,
       deleteEntry,
@@ -189,6 +198,7 @@ export function HistoryProvider({ children }) {
       history,
       hydrated,
       historyApiEnabled,
+      historyError,
       loadingEntryIds,
       addEntry,
       deleteEntry,
