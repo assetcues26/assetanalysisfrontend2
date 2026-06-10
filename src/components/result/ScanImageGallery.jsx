@@ -1,3 +1,16 @@
+import { motion } from 'framer-motion';
+
+const thumbClass = (active, clickable) =>
+  [
+    'touch-manipulation overflow-hidden rounded-lg border bg-white transition-shadow duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500',
+    clickable ? 'cursor-pointer' : 'cursor-default',
+    active
+      ? 'border-blue-500 shadow-md ring-2 ring-blue-400'
+      : clickable
+        ? 'border-gray-300 hover:border-blue-400 hover:shadow-md hover:ring-2 hover:ring-blue-200'
+        : 'border-gray-300',
+  ].join(' ');
+
 /**
  * Shared gallery for result/history: collage output + uploaded frames.
  */
@@ -7,6 +20,7 @@ export function ScanImageGallery({
   processingMode,
   analysisMethod,
   onImageClick,
+  activeIndex = null,
 }) {
   const isCollage =
     analysisMethod === 'collage' || processingMode === 'collage';
@@ -30,10 +44,10 @@ export function ScanImageGallery({
             <GalleryThumb
               key={`${url}-${index}`}
               url={url}
-              index={index}
               onImageClick={onImageClick}
               lightboxIndex={index}
               label={`Uploaded image ${index + 1}`}
+              active={activeIndex === index}
             />
           ))}
         </div>
@@ -49,18 +63,14 @@ export function ScanImageGallery({
             Processing collage (sent to AI)
           </p>
           <div className="flex w-full justify-center">
-            <button
-              type="button"
-              onClick={() => onImageClick?.(0)}
-              className="overflow-hidden rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500"
-              aria-label="View processing collage"
-            >
-              <img
-                src={mergedImageUrl}
-                alt="Processing collage sent to AI"
-                className="mx-auto max-h-64 w-auto max-w-full object-contain"
-              />
-            </button>
+            <GalleryThumb
+              url={mergedImageUrl}
+              onImageClick={onImageClick}
+              lightboxIndex={0}
+              label="Processing collage sent to AI"
+              active={activeIndex === 0}
+              contain
+            />
           </div>
         </div>
       )}
@@ -71,16 +81,19 @@ export function ScanImageGallery({
             Original uploads ({uploads.length})
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-            {uploads.map((url, index) => (
-              <GalleryThumb
-                key={`${url}-${index}`}
-                url={url}
-                index={index}
-                onImageClick={onImageClick}
-                lightboxIndex={mergedImageUrl ? index + 1 : index}
-                label={`Original upload ${index + 1}`}
-              />
-            ))}
+            {uploads.map((url, index) => {
+              const lightboxIndex = mergedImageUrl ? index + 1 : index;
+              return (
+                <GalleryThumb
+                  key={`${url}-${index}`}
+                  url={url}
+                  onImageClick={onImageClick}
+                  lightboxIndex={lightboxIndex}
+                  label={`Original upload ${index + 1}`}
+                  active={activeIndex === lightboxIndex}
+                />
+              );
+            })}
           </div>
         </div>
       )}
@@ -88,19 +101,36 @@ export function ScanImageGallery({
   );
 }
 
-function GalleryThumb({ url, index, onImageClick, lightboxIndex, label }) {
+function GalleryThumb({
+  url,
+  onImageClick,
+  lightboxIndex,
+  label,
+  active = false,
+  contain = false,
+}) {
+  const clickable = Boolean(onImageClick);
+
   return (
-    <button
+    <motion.button
       type="button"
       onClick={() => onImageClick?.(lightboxIndex)}
-      className="overflow-hidden rounded-lg border border-gray-300 bg-white focus:ring-2 focus:ring-blue-500"
-      aria-label={`View ${label}`}
+      whileTap={clickable ? { scale: 0.96 } : undefined}
+      whileHover={clickable ? { scale: 1.02 } : undefined}
+      transition={{ type: 'spring', stiffness: 420, damping: 28 }}
+      className={`${thumbClass(active, clickable)} ${contain ? 'rounded-xl' : ''}`}
+      aria-label={clickable ? `View ${label}` : label}
+      aria-pressed={clickable && active ? true : undefined}
     >
       <img
         src={url}
         alt={label}
-        className="aspect-square w-full object-cover"
+        className={
+          contain
+            ? 'mx-auto max-h-64 w-auto max-w-full object-contain'
+            : 'aspect-square w-full object-cover'
+        }
       />
-    </button>
+    </motion.button>
   );
 }

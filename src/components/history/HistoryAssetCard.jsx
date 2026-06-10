@@ -17,6 +17,8 @@ import {
   hasHistoryCardImage,
 } from './historyCardImages';
 import { AssetResultCard } from '../result/AssetResultCard';
+import { ImageLightbox } from '../result/ImageLightbox';
+import { buildResultGallery } from '../../utils/blobUrls';
 
 export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, index = 0 }) {
   const navigate = useNavigate();
@@ -26,6 +28,7 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
   const [exportingPdf, setExportingPdf] = useState(false);
   const [detailEntry, setDetailEntry] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
   const [imgSrc, setImgSrc] = useState(() => getHistoryCardImageUrl(entry));
   const hasStoredImages = hasHistoryCardImage(entry);
 
@@ -33,6 +36,7 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
     if (!expanded) {
       setDetailEntry(null);
       setLoadError(null);
+      setLightboxIndex(null);
       return undefined;
     }
 
@@ -64,6 +68,7 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
   const loadingDetail =
     expanded && loadingEntryIds.has(entry.id) && !detailEntry && !loadError;
   const reportEntry = detailEntry || (isFullHistoryEntry(entry) ? entry : null);
+  const galleryImages = reportEntry ? buildResultGallery(reportEntry) : [];
 
   const handleDelete = (e) => {
     e.stopPropagation();
@@ -192,6 +197,8 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
                   <AssetResultCard
                     result={reportEntry}
                     images={reportEntry.previewUrls || []}
+                    onImageClick={setLightboxIndex}
+                    activeLightboxIndex={lightboxIndex}
                     showExport={false}
                   />
                   <div className="flex flex-col gap-2 sm:flex-row">
@@ -238,6 +245,14 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ImageLightbox
+        imageUrl={
+          lightboxIndex != null ? galleryImages[lightboxIndex] || null : null
+        }
+        onClose={() => setLightboxIndex(null)}
+        zIndexClass="z-[80]"
+      />
 
       <ConfirmModal
         open={confirmOpen}

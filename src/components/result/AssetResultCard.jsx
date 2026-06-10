@@ -75,6 +75,7 @@ export function AssetResultCard({
   result,
   images = [],
   onImageClick,
+  activeLightboxIndex = null,
   showExport = true,
   onExportPdf,
 }) {
@@ -215,6 +216,7 @@ export function AssetResultCard({
         processingMode={result.processingMode}
         analysisMethod={result.analysis_method}
         onImageClick={onImageClick}
+        activeIndex={activeLightboxIndex}
       />
 
       <div className="space-y-6 px-6 py-6 sm:px-8">

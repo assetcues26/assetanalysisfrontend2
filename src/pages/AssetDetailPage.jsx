@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { AlertCircle, X } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { ImageLightbox } from '../components/result/ImageLightbox';
 import { CompactHeader } from '../components/layout/AppHeader';
 import { BackButton } from '../components/ui/BackButton';
 import { Button } from '@/components/ui/button';
@@ -72,36 +72,18 @@ export function AssetDetailPage() {
             result={entry}
             images={uploadedImages}
             onImageClick={setLightboxIndex}
+            activeLightboxIndex={lightboxIndex}
             showExport
           />
         </PageWrapper>
       </HeroSection>
 
-      <AnimatePresence>
-        {lightboxIndex != null && galleryImages[lightboxIndex] && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
-            onClick={() => setLightboxIndex(null)}
-          >
-            <button
-              type="button"
-              className="absolute right-4 top-4 rounded-full bg-white p-2 text-gray-900 shadow-md"
-              onClick={() => setLightboxIndex(null)}
-              aria-label="Close lightbox"
-            >
-              <X size={24} />
-            </button>
-            <img
-              src={galleryImages[lightboxIndex]}
-              alt="Fullscreen asset"
-              className="max-h-full max-w-full object-contain"
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ImageLightbox
+        imageUrl={
+          lightboxIndex != null ? galleryImages[lightboxIndex] || null : null
+        }
+        onClose={() => setLightboxIndex(null)}
+      />
     </div>
   );
 }
