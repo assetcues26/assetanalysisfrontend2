@@ -10,6 +10,7 @@ import { useCamera } from '../../hooks/useCamera';
 import { useLockViewportZoom } from '../../hooks/useLockViewportZoom';
 import { useMobileCaptureUpload } from '../../hooks/useMobileCaptureUpload';
 import { useMobileSession } from '../../hooks/useMobileSession';
+import { MobileSyncFailedBanner } from '../../components/session/MobileSyncFailedBanner';
 import { useApp } from '../../context/AppContext';
 
 const CAPTURE_COOLDOWN_MS = 750;
@@ -33,9 +34,11 @@ export function MobileCapturePage() {
   const {
     enqueueCapture,
     pendingCount,
+    failedCount,
     uploading,
     canCaptureMore,
     displayImageCount,
+    retryFailed,
   } = useMobileCaptureUpload({
     token,
     session,
@@ -115,11 +118,16 @@ export function MobileCapturePage() {
     window.setTimeout(() => setCaptureCooldown(false), CAPTURE_COOLDOWN_MS);
   };
 
-  const hasPhotos = displayImageCount > 0 || pendingCount > 0;
+  const hasPhotos = displayImageCount > 0 || pendingCount > 0 || failedCount > 0;
   const flashSupported = camera.facingMode === 'environment';
   const shutterDisabled = !camera.isReady || capturing || captureCooldown || !canCaptureMore;
 
   const statusText = (() => {
+    if (failedCount > 0 && !uploading && pendingCount === 0) {
+      return failedCount === 1
+        ? '1 photo could not sync — tap Retry below'
+        : `${failedCount} photos could not sync — tap Retry below`;
+    }
     if (uploading || pendingCount > 0) {
       const syncing = pendingCount === 1 ? '1 photo syncing' : `${pendingCount} photos syncing`;
       return `${syncing} — tap Done anytime`;
@@ -181,6 +189,15 @@ export function MobileCapturePage() {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-800 bg-gray-950/95 pb-safe backdrop-blur-md">
+        {failedCount > 0 ? (
+          <MobileSyncFailedBanner
+            count={failedCount}
+            onRetry={retryFailed}
+            retrying={uploading}
+            variant="dark"
+            className="mx-4 mt-3"
+          />
+        ) : null}
         <p className="px-4 pb-2 pt-3 text-center text-xs text-white/90">{statusText}</p>
         <div className="flex items-center justify-between px-4 pb-4 pt-1">
           <button

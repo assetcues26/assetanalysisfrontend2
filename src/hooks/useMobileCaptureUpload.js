@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react';
 import {
   enqueueMobileCapture,
   getMobileCaptureQueueSnapshot,
+  retryFailedUploads,
   runMobileCaptureQueue,
   seedMobileCaptureConfirmedCount,
   subscribeMobileCaptureQueue,
@@ -44,6 +45,7 @@ export function useMobileCaptureUpload({
     queueLength: 0,
     uploading: false,
     pendingCount: 0,
+    failedCount: 0,
     confirmedCount: 0,
   });
 
@@ -54,6 +56,15 @@ export function useMobileCaptureUpload({
 
   const queueSnapshot = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
+  const getHandlers = useCallback(
+    () => ({
+      getSessionImages: () => sessionRef.current?.images,
+      refresh: handlersRef.current.refresh,
+      showToast: handlersRef.current.showToast,
+    }),
+    [],
+  );
+
   useEffect(() => {
     if (!token) return;
     seedMobileCaptureConfirmedCount(token, imageCount);
@@ -61,39 +72,41 @@ export function useMobileCaptureUpload({
 
   useEffect(() => {
     if (!token) return;
-    runMobileCaptureQueue(token, {
-      getSessionImages: () => sessionRef.current?.images,
-      refresh: handlersRef.current.refresh,
-      showToast: handlersRef.current.showToast,
-    });
-  }, [token]);
+    runMobileCaptureQueue(token, getHandlers());
+  }, [token, getHandlers]);
 
   const displayImageCount = Math.max(imageCount, queueSnapshot.confirmedCount);
   const pendingCount = queueSnapshot.pendingCount;
+  const failedCount = queueSnapshot.failedCount;
+  const reservedCount = pendingCount + failedCount;
   const canCaptureMore = Boolean(
-    token && canAdd && displayImageCount + pendingCount < maxImages,
+    token && canAdd && displayImageCount + reservedCount < maxImages,
   );
 
   const enqueueCapture = useCallback(
     (file) => {
       if (!file || !token || !canCaptureMore) return false;
-      enqueueMobileCapture(token, file, {
-        getSessionImages: () => sessionRef.current?.images,
-        refresh: handlersRef.current.refresh,
-        showToast: handlersRef.current.showToast,
-      });
+      enqueueMobileCapture(token, file, getHandlers());
       return true;
     },
-    [token, canCaptureMore],
+    [token, canCaptureMore, getHandlers],
   );
+
+  const retryFailed = useCallback(() => {
+    if (!token || queueSnapshot.uploading) return;
+    retryFailedUploads(token, getHandlers());
+  }, [token, queueSnapshot.uploading, getHandlers]);
 
   return {
     enqueueCapture,
+    retryFailed,
     queueLength: queueSnapshot.queueLength,
     uploading: queueSnapshot.uploading,
     pendingCount,
+    failedCount,
     displayImageCount,
     canCaptureMore,
     isSyncing: pendingCount > 0,
+    hasSyncFailures: failedCount > 0,
   };
 }

@@ -1,6 +1,17 @@
 import { uploadSessionImagesPrepared } from '../services/sessionApi';
+import { isRetryableUploadError, withUploadRetries } from '../utils/uploadRetry';
 
-/** @typedef {{ items: File[], processing: boolean, confirmedCount: number, listeners: Set<() => void> }} QueueState */
+/**
+ * @typedef {{ file: File, attempts: number }} QueueItem
+ * @typedef {{ file: File, error: string }} FailedItem
+ * @typedef {{
+ *   items: QueueItem[],
+ *   failedItems: FailedItem[],
+ *   processing: boolean,
+ *   confirmedCount: number,
+ *   listeners: Set<() => void>,
+ * }} QueueState
+ */
 
 /** @type {Map<string, QueueState>} */
 const uploadQueues = new Map();
@@ -17,6 +28,7 @@ function buildSnapshot(state) {
     queueLength: state.items.length,
     uploading: state.processing,
     pendingCount,
+    failedCount: state.failedItems.length,
     confirmedCount: state.confirmedCount,
   };
 }
@@ -29,6 +41,7 @@ function queueState(token) {
   if (!uploadQueues.has(token)) {
     uploadQueues.set(token, {
       items: [],
+      failedItems: [],
       processing: false,
       confirmedCount: 0,
       listeners: new Set(),
@@ -68,6 +81,7 @@ export function getMobileCaptureQueueSnapshot(token) {
     cached.queueLength !== next.queueLength ||
     cached.uploading !== next.uploading ||
     cached.pendingCount !== next.pendingCount ||
+    cached.failedCount !== next.failedCount ||
     cached.confirmedCount !== next.confirmedCount
   ) {
     snapshotCache.set(token, next);
@@ -87,6 +101,21 @@ export function seedMobileCaptureConfirmedCount(token, count) {
 }
 
 /**
+ * @param {{
+ *   getSessionImages?: () => Array<{ byte_size?: number | null }> | undefined,
+ *   refresh?: () => Promise<unknown>,
+ *   showToast?: (message: string, type?: string) => void,
+ * }} handlers
+ */
+function queueHandlers(handlers = {}) {
+  return {
+    getSessionImages: handlers.getSessionImages,
+    refresh: handlers.refresh,
+    showToast: handlers.showToast,
+  };
+}
+
+/**
  * @param {string} token
  * @param {File} file
  * @param {{
@@ -97,7 +126,27 @@ export function seedMobileCaptureConfirmedCount(token, count) {
  */
 export function enqueueMobileCapture(token, file, handlers = {}) {
   const state = queueState(token);
-  state.items.push(file);
+  state.items.push({ file, attempts: 0 });
+  emitMobileCaptureQueue(token);
+  runMobileCaptureQueue(token, handlers);
+}
+
+/**
+ * @param {string} token
+ * @param {{
+ *   getSessionImages?: () => Array<{ byte_size?: number | null }> | undefined,
+ *   refresh?: () => Promise<unknown>,
+ *   showToast?: (message: string, type?: string) => void,
+ * }} handlers
+ */
+export function retryFailedUploads(token, handlers = {}) {
+  const state = queueState(token);
+  if (!token || state.processing || state.failedItems.length === 0) return;
+
+  const failed = state.failedItems.splice(0);
+  for (const item of failed) {
+    state.items.push({ file: item.file, attempts: 0 });
+  }
   emitMobileCaptureQueue(token);
   runMobileCaptureQueue(token, handlers);
 }
@@ -117,14 +166,16 @@ export async function runMobileCaptureQueue(token, handlers = {}) {
   state.processing = true;
   emitMobileCaptureQueue(token);
 
-  const { getSessionImages, refresh, showToast } = handlers;
+  const { getSessionImages, refresh, showToast } = queueHandlers(handlers);
 
   while (state.items.length > 0) {
-    const file = state.items[0];
+    const item = state.items[0];
     try {
-      const updated = await uploadSessionImagesPrepared(token, file, 'mobile', {
-        sessionImages: getSessionImages?.(),
-      });
+      const updated = await withUploadRetries(() =>
+        uploadSessionImagesPrepared(token, item.file, 'mobile', {
+          sessionImages: getSessionImages?.(),
+        }),
+      );
       if (typeof updated?.image_count === 'number') {
         state.confirmedCount = updated.image_count;
       } else {
@@ -134,9 +185,14 @@ export async function runMobileCaptureQueue(token, handlers = {}) {
       emitMobileCaptureQueue(token);
       refresh?.().catch(() => {});
     } catch (err) {
+      const message = err?.message || 'Upload failed';
       state.items.shift();
+      if (isRetryableUploadError(err)) {
+        state.failedItems.push({ file: item.file, error: message });
+      } else {
+        showToast?.(message, 'error');
+      }
       emitMobileCaptureQueue(token);
-      showToast?.(err?.message || 'Upload failed', 'error');
     }
   }
 
