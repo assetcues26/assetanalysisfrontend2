@@ -147,10 +147,11 @@ export function AddFromPhonePanel({ variant = 'full', autoStart = false }) {
               <QrCodePlaceholder size={100} />
               <Button
                 type="button"
-                variant="outline"
+                variant="primary"
                 size="sm"
                 disabled={loading}
                 onClick={handleConnect}
+                className="gap-1.5"
               >
                 <QrCode size={14} aria-hidden />
                 {loading ? 'Generating…' : 'Generate QR'}
@@ -162,7 +163,13 @@ export function AddFromPhonePanel({ variant = 'full', autoStart = false }) {
 
         {scanUrl && (
 
-          <Button type="button" variant="outline" size="sm" className="mt-3" onClick={handleCopy}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="mt-3 border-gray-300 bg-white text-gray-900 hover:bg-gray-50 hover:text-gray-900"
+            onClick={handleCopy}
+          >
 
             <Copy className="me-1.5" size={14} aria-hidden />
 
