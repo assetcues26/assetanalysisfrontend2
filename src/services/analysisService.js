@@ -9,7 +9,7 @@ import { compressImage } from '../utils/imageCompression';
 
 /**
  * @param {Array<{ id: string, file?: File, previewUrl: string, name?: string }>} images
- * @param {{ processingMode?: import('../constants/uploadMode').UploadProcessingMode, locale?: string }} [options]
+ * @param {{ processingMode?: import('../constants/uploadMode').UploadProcessingMode, locale?: string, marketRegion?: string }} [options]
  * @returns {Promise<object>}
  */
 export async function analyzeImages(images, options = {}) {
@@ -36,6 +36,7 @@ export async function analyzeImages(images, options = {}) {
 
   const apiResponse = await analyzeAssetsOnServer(compressedFiles, processingMode, {
     locale: options.locale,
+    marketRegion: options.marketRegion,
   });
 
   let fallbackPreviewUrls = [];

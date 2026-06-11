@@ -7,10 +7,12 @@ import {
   formatBookNbvDisplay,
   formatConfidence,
   formatDateTime,
+  formatDisplayMoneyRange,
   formatInrAmount,
   formatList,
-  formatMoneyRange,
   formatProcessingTime,
+  getValuationDisplayMeta,
+  getValuationRange,
 } from '../utils/formatters';
 import {
   humanizeAnalysisMethod,
@@ -69,10 +71,16 @@ export function pdfSafeText(text) {
     .replace(/[^\t\n\r\x20-\x7e]/g, '');
 }
 
-function formatPdfInrMoneyRange(range) {
-  const raw = formatMoneyRange(range, 'Rs. ');
+function formatPdfMoneyRange(range, currency = 'INR') {
+  const raw = formatDisplayMoneyRange(range, currency);
   if (raw === '—') return null;
   return pdfSafeText(raw);
+}
+
+function moneyFieldLabel(baseLabel, currency = 'INR') {
+  const suffix =
+    currency === 'USD' ? '$' : currency === 'GBP' ? '£' : 'Rs.';
+  return `${baseLabel} (${suffix})`;
 }
 
 function yesNo(value) {
@@ -189,6 +197,9 @@ function buildReportSections(entry) {
   const ctx = entry.erpContext || {};
   const reasoning = entry.reasoning_summary || {};
   const confidence = entry.confidence || {};
+  const displayMeta = getValuationDisplayMeta(entry.analysis_policy);
+  const asIs = getValuationRange(valuation, 'as_is');
+  const likeNew = getValuationRange(valuation, 'like_new_reference');
 
   const sections = [];
 
@@ -200,11 +211,16 @@ function buildReportSections(entry) {
     fields: [
       ['Asset name', entry.asset_name],
       ['Condition grade', entry.condition || condition.grade],
-      ['Current estimate (Rs.)', formatPdfInrMoneyRange(valuation.as_is?.inr)],
       [
-        'Book NBV (Rs.)',
+        moneyFieldLabel('Current estimate', displayMeta.currency),
+        formatPdfMoneyRange(asIs?.range, asIs?.currency || displayMeta.currency),
+      ],
+      [
+        moneyFieldLabel('Book NBV', displayMeta.currency),
         valuation.nbv
-          ? pdfSafeText(formatBookNbvDisplay(valuation, erp, ctx))
+          ? pdfSafeText(
+              formatBookNbvDisplay(valuation, erp, ctx, displayMeta.currency),
+            )
           : null,
       ],
       ['Tag (detected)', entry.detected_tag_number_raw],
@@ -307,15 +323,20 @@ function buildReportSections(entry) {
   sections.push({
     id: 'valuation',
     title: 'Valuation',
-    subtitle: 'India market estimates in rupees',
+    subtitle: displayMeta.subtitle,
     theme: THEMES.valuation,
     fields: [
       ['Status', valuation.status ? humanizeValuationStatus(valuation.status) : null],
-      ['Current estimate (Rs.)', formatPdfInrMoneyRange(valuation.as_is?.inr)],
       [
-        'Book NBV (Rs.)',
+        moneyFieldLabel('Current estimate', displayMeta.currency),
+        formatPdfMoneyRange(asIs?.range, asIs?.currency || displayMeta.currency),
+      ],
+      [
+        moneyFieldLabel('Book NBV', displayMeta.currency),
         valuation.nbv
-          ? pdfSafeText(formatBookNbvDisplay(valuation, erp, ctx))
+          ? pdfSafeText(
+              formatBookNbvDisplay(valuation, erp, ctx, displayMeta.currency),
+            )
           : null,
       ],
       ['NBV method', valuation.nbv?.method === 'erp_book_nbv' ? 'ERP book value' : valuation.nbv?.method],
@@ -326,7 +347,10 @@ function buildReportSections(entry) {
           ? formatAgeYearsMonths(valuation.nbv.age_years_used)
           : null,
       ],
-      ['Like-new reference (Rs.)', formatPdfInrMoneyRange(valuation.like_new_reference?.inr)],
+      [
+        moneyFieldLabel('Like-new reference', displayMeta.currency),
+        formatPdfMoneyRange(likeNew?.range, likeNew?.currency || displayMeta.currency),
+      ],
       [
         'NBV exceeds current estimate',
         valuation.nbv_exceeds_as_is == null ? null : yesNo(valuation.nbv_exceeds_as_is),
@@ -644,17 +668,22 @@ function drawSummaryMetrics(state, entry) {
   const erp = normalizeErpVerification(
     entry.erp_verification ?? entry.apiResponse?.demo_verification,
   );
+  const displayMeta = getValuationDisplayMeta(entry.analysis_policy);
+  const asIs = getValuationRange(valuation, 'as_is');
   const metrics = [
     { label: 'Condition', value: entry.condition || '-', color: [219, 234, 254] },
     {
       label: 'Current estimate',
-      value: formatPdfInrMoneyRange(valuation.as_is?.inr) || '-',
+      value:
+        formatPdfMoneyRange(asIs?.range, asIs?.currency || displayMeta.currency) || '-',
       color: [254, 243, 199],
     },
     {
       label: 'Book NBV',
       value:
-        pdfSafeText(formatBookNbvDisplay(valuation, erp, entry.erpContext)) || '-',
+        pdfSafeText(
+          formatBookNbvDisplay(valuation, erp, entry.erpContext, displayMeta.currency),
+        ) || '-',
       color: [209, 250, 229],
     },
     {

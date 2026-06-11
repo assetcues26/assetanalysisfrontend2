@@ -106,16 +106,18 @@ describe('recomputeFar', () => {
     expect(far.book_nbv_inr).toBeLessThan(ctx.original_cost_inr);
   });
 
-  it('updates NBV when acquisition_date changes to today (brand new)', () => {
+  it('updates NBV when acquisition_date is brand new on the as-of date', () => {
     const ctx = {
       original_cost_inr: 100000,
       acquisition_date: AS_OF,
       subcategory: 'laptop',
     };
-    // The calculator uses today's real date, not AS_OF, so age may be ±1 day off AS_OF.
-    // Just verify NBV is effectively at original cost (< 1 day of depreciation).
-    const far = recomputeFar(ctx);
-    expect(far.book_nbv_inr).toBeGreaterThanOrEqual(99900);
-    expect(far.book_nbv_inr).toBeLessThanOrEqual(100000);
+    const far = computeSlmFar(
+      ctx.original_cost_inr,
+      ctx.acquisition_date,
+      resolveUsefulLife(ctx),
+      { asOf: AS_OF },
+    );
+    expect(far.book_nbv_inr).toBe(100000);
   });
 });

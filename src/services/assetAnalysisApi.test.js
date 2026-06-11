@@ -41,7 +41,8 @@ describe('assetAnalysisApi', () => {
     expect(url).toBe(ASSET_ANALYSIS_ENDPOINTS.collage);
     expect(init.method).toBe('POST');
     expect(init.body).toBeInstanceOf(FormData);
-    expect(init.body.get('locale')).toBe('en');
+    expect(init.body.get('locale')).toBe('en-IN');
+    expect(init.body.get('market_region')).toBe('IN');
     expect(init.body.getAll('images')).toHaveLength(1);
   });
 

@@ -6,10 +6,15 @@ import {
   useMemo,
   useState,
 } from 'react';
+import { DEFAULT_MARKET_REGION } from '../constants/markets';
 import {
   readStoredUploadMode,
   UPLOAD_PROCESSING_MODES,
 } from '../constants/uploadMode';
+import {
+  readStoredMarketRegion,
+  writeStoredMarketRegion,
+} from '../utils/marketStorage';
 
 const AppContext = createContext(null);
 
@@ -30,9 +35,16 @@ export function AppProvider({ children }) {
   const [uploadProcessingMode, setUploadProcessingModeState] = useState(
     () => readStoredUploadMode(),
   );
+  const [marketRegion, setMarketRegionState] = useState(() => readStoredMarketRegion());
 
   const setUploadProcessingMode = useCallback((mode) => {
     setUploadProcessingModeState(mode);
+  }, []);
+
+  const setMarketRegion = useCallback((region) => {
+    const normalized = (region || DEFAULT_MARKET_REGION).toUpperCase();
+    setMarketRegionState(normalized);
+    writeStoredMarketRegion(normalized);
   }, []);
 
   useEffect(() => {
@@ -76,6 +88,8 @@ export function AppProvider({ children }) {
       setAnalysisError,
       uploadProcessingMode,
       setUploadProcessingMode,
+      marketRegion,
+      setMarketRegion,
     }),
     [
       maxImages,
@@ -89,6 +103,8 @@ export function AppProvider({ children }) {
       analysisError,
       uploadProcessingMode,
       setUploadProcessingMode,
+      marketRegion,
+      setMarketRegion,
     ],
   );
 

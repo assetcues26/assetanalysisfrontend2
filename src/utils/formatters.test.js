@@ -10,6 +10,9 @@ import {
   resolveConditionLabel,
   formatUsdCost,
   formatTokenCount,
+  formatDisplayMoneyRange,
+  getValuationRange,
+  getCurrencyMeta,
 } from './formatters';
 
 describe('formatters', () => {
@@ -101,6 +104,36 @@ describe('formatters', () => {
       expect(normalizeCondition('Fair')).toBe('Fair');
       expect(normalizeCondition('damaged')).toBe('Poor');
       expect(normalizeCondition('')).toBe(null);
+    });
+  });
+
+  describe('currency formatters', () => {
+    it('formats USD and GBP ranges', () => {
+      expect(formatDisplayMoneyRange({ min: 1200, max: 1500 }, 'USD')).toBe('$1,200 – $1,500');
+      expect(formatDisplayMoneyRange({ min: 800, max: 950 }, 'GBP')).toBe('£800 – £950');
+    });
+
+    it('reads display range with inr fallback', () => {
+      const withDisplay = {
+        as_is: {
+          display: { min: 100, max: 200 },
+          display_currency: 'USD',
+        },
+      };
+      expect(getValuationRange(withDisplay, 'as_is')).toEqual({
+        range: { min: 100, max: 200 },
+        currency: 'USD',
+      });
+      const legacy = { as_is: { inr: { min: 5000, max: 6000 } } };
+      expect(getValuationRange(legacy, 'as_is')).toEqual({
+        range: { min: 5000, max: 6000 },
+        currency: 'INR',
+      });
+    });
+
+    it('returns currency meta for each market', () => {
+      expect(getCurrencyMeta('USD').symbol).toBe('$');
+      expect(getCurrencyMeta('GBP').locale).toBe('en-GB');
     });
   });
 

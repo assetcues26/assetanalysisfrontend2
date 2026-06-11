@@ -98,6 +98,13 @@ beforeEach(() => {
       getUserMedia: vi.fn().mockResolvedValue({
         active: true,
         getTracks: () => [{ stop: vi.fn() }],
+        getVideoTracks: () => [
+          {
+            stop: vi.fn(),
+            getCapabilities: () => ({}),
+            applyConstraints: vi.fn().mockResolvedValue(undefined),
+          },
+        ],
       }),
     },
   });

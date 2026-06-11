@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Database, Settings } from 'lucide-react';
+import { MARKET_OPTIONS } from '../../constants/markets';
 import {
   UPLOAD_MODE_LABELS,
   UPLOAD_PROCESSING_MODES,
@@ -29,7 +30,7 @@ const OPTIONS = [
 const PANEL_WIDTH = 340;
 
 export function LandingSettings() {
-  const { uploadProcessingMode, setUploadProcessingMode, showToast } = useApp();
+  const { uploadProcessingMode, setUploadProcessingMode, marketRegion, setMarketRegion, showToast } = useApp();
   const { clearBatch } = useBatchContext();
   const { clearSession } = useSessionContext();
   const { reloadHistory } = useHistoryContext();
@@ -123,6 +124,33 @@ export function LandingSettings() {
               </li>
             ))}
           </ul>
+
+          <div className="mt-5 border-t border-gray-200 pt-4">
+            <p className="mb-1 text-sm font-semibold text-gray-900">Market region</p>
+            <p className="mb-3 text-xs text-gray-500">
+              Valuation, currency, and market assumptions for your next scan.
+            </p>
+            <ul className="space-y-2">
+              {MARKET_OPTIONS.map((market) => (
+                <li key={market.id}>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-gray-200 p-3 transition-colors hover:border-blue-200 hover:bg-blue-50/40 has-[:checked]:border-blue-400 has-[:checked]:bg-blue-50/60">
+                    <input
+                      type="radio"
+                      name="market-region"
+                      checked={marketRegion === market.id}
+                      onChange={() => setMarketRegion(market.id)}
+                      className="mt-0.5 h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-gray-800">
+                        {market.label} ({market.symbol})
+                      </span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
 
           <div className="mt-5 border-t border-gray-200 pt-4">
             <p className="mb-1 text-sm font-semibold text-gray-900">Demo data</p>

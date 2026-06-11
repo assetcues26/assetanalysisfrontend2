@@ -6,6 +6,7 @@ import {
   fetchCaptureSession,
   isSessionUnavailableError,
 } from '../services/sessionApi';
+import { readStoredMarketRegion } from '../utils/marketStorage';
 
 const POLL_MS = 1000;
 const ANALYZE_STALE_MS = 90_000;
@@ -123,7 +124,9 @@ export function useMobileSession(token, options = {}) {
     sawAnalyzingRef.current = false;
     analyzingSinceRef.current = null;
     try {
-      const result = await analyzeCaptureSession(token);
+      const result = await analyzeCaptureSession(token, {
+        marketRegion: readStoredMarketRegion(),
+      });
       const data = await refresh();
       if (result.status === 'completed' && result.entry_id) {
         navigate(`/result/${result.entry_id}`, { replace: true });

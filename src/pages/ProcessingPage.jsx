@@ -45,7 +45,14 @@ export function ProcessingPage() {
   const { batchImages, batchCount, clearBatch } = useMergedBatch();
   const { addEntry } = useHistory();
   const { attachToken, clearSession, cancelAnalysis, sessionCount } = useSession();
-  const { setLastResult, setAnalysisError, analysisError, uploadProcessingMode } = useApp();
+  const {
+    lastResult,
+    setLastResult,
+    setAnalysisError,
+    analysisError,
+    uploadProcessingMode,
+    marketRegion,
+  } = useApp();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [sessionImageCount, setSessionImageCount] = useState(() =>
@@ -122,10 +129,10 @@ export function ProcessingPage() {
     }
   }, [sessionToken, attachToken]);
 
-  // Abort any in-flight local analysis only when leaving the page.
+  // Abort in-flight fetch when leaving the page (do not bump runId — that
+  // invalidates completion handlers under React Strict Mode remounts).
   useEffect(
     () => () => {
-      runIdRef.current += 1;
       abortActiveLocalAnalyze();
     },
     [],
@@ -258,12 +265,12 @@ export function ProcessingPage() {
       );
       return analyzeImages([...locals, ...downloaded], {
         processingMode: uploadProcessingMode,
+        marketRegion,
       });
     };
 
     withTimeout(materializeAndAnalyze(), ANALYSIS_TIMEOUT_MS)
       .then(async (result) => {
-        if (runId !== runIdRef.current) return;
         const entry = await addEntry({
           ...result,
           mergedImageUrl: result.mergedImageUrl ?? null,
@@ -271,11 +278,12 @@ export function ProcessingPage() {
         });
         setLastResult(entry);
         setAnalysisError(null);
-        completedRef.current = true;
         clearBatch();
         if (remoteImagesRef.current.length > 0) {
           clearSession();
         }
+        if (runId !== runIdRef.current) return;
+        completedRef.current = true;
         navigate(`/result/${entry.id}`, { replace: true });
       })
       .catch((err) => {
@@ -283,10 +291,15 @@ export function ProcessingPage() {
         setAnalysisError(err.message || 'Analysis failed');
       })
       .finally(() => {
-        if (runId === runIdRef.current) {
-          setIsAnalyzing(false);
+        if (runId !== runIdRef.current) {
+          // Stale run (e.g. Strict Mode) — unblock UI so recovery can navigate.
+          startedBatchKeyRef.current = null;
           analyzingRef.current = false;
+          setIsAnalyzing(false);
+          return;
         }
+        setIsAnalyzing(false);
+        analyzingRef.current = false;
       });
 
     return undefined;
@@ -296,11 +309,28 @@ export function ProcessingPage() {
     analyzableCount,
     batchCount,
     uploadProcessingMode,
+    marketRegion,
     addEntry,
     setLastResult,
     setAnalysisError,
     clearBatch,
     clearSession,
+    navigate,
+  ]);
+
+  // Recover if analysis finished but navigation was skipped (e.g. Strict Mode).
+  useEffect(() => {
+    if (sessionToken || isAnalyzing || analysisError || batchCount > 0) return;
+    const resultId = lastResult?.id || lastResult?.request_id;
+    if (!resultId || completedRef.current) return;
+    completedRef.current = true;
+    navigate(`/result/${resultId}`, { replace: true });
+  }, [
+    sessionToken,
+    isAnalyzing,
+    analysisError,
+    batchCount,
+    lastResult,
     navigate,
   ]);
 

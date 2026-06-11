@@ -1,4 +1,5 @@
 import { ASSET_ANALYSIS_API_BASE } from '../config/api';
+import { DEFAULT_MARKET_REGION, getMarketConfig } from '../constants/markets';
 
 import { formatApiErrorMessage } from '../utils/apiErrorMessage';
 
@@ -266,7 +267,7 @@ export async function deleteSessionImage(token, imageId) {
 
  * @param {string} token
 
- * @param {{ locale?: string }} [options]
+ * @param {{ locale?: string, marketRegion?: string }} [options]
 
  */
 
@@ -276,8 +277,11 @@ export async function analyzeCaptureSession(token, options = {}) {
   activeAnalyzeController = controller;
   const signal = options.signal || controller.signal;
 
+  const marketRegion = (options.marketRegion || DEFAULT_MARKET_REGION).toUpperCase();
+  const market = getMarketConfig(marketRegion);
   const formData = new FormData();
-  formData.append('locale', options.locale || 'en-IN');
+  formData.append('locale', options.locale || market.locale);
+  formData.append('market_region', marketRegion);
 
   const timeoutId = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);
 

@@ -12,7 +12,9 @@ import {
   bookNbvSublabel,
   formatAgeYearsMonths,
   formatBookNbvDisplay,
-  formatInrMoneyRange,
+  formatDisplayMoneyRange,
+  getCurrencyMeta,
+  getValuationRange,
   resolveConditionLabel,
 } from '../../utils/formatters';
 import { tagReadabilityLabel, tagReadabilityStatus } from '../../utils/tagReadability';
@@ -98,12 +100,19 @@ export function AssetResultCard({
   const assetSubtitle = [asset?.brand, asset?.model, asset?.category].filter(Boolean).join(' · ');
   const ageSummary = formatAgeYearsMonths(asset?.estimated_age_years);
   const modelYearSummary = asset?.estimated_model_years;
-  const valuationRange = formatInrMoneyRange(result.valuation?.as_is?.inr);
+  const displayCurrency = result.analysis_policy?.display_currency || 'INR';
+  const currencySymbol = getCurrencyMeta(displayCurrency).symbol;
+  const asIsRange = getValuationRange(result.valuation, 'as_is');
+  const valuationRange = formatDisplayMoneyRange(
+    asIsRange?.range,
+    asIsRange?.currency || displayCurrency,
+  );
   const hasValuation = valuationRange !== '—';
   const bookNbvDisplay = formatBookNbvDisplay(
     result.valuation,
     result.erp_verification,
     result.erpContext,
+    displayCurrency,
   );
   const hasBookNbv = bookNbvDisplay !== '—';
   const isErpBookNbv = result.valuation?.nbv?.method === 'erp_book_nbv';
@@ -230,7 +239,11 @@ export function AssetResultCard({
           <HighlightMetric
             label="Current estimate"
             value={hasValuation ? valuationRange : 'Pending'}
-            hint={hasValuation ? 'Damage-adjusted market (₹)' : 'Run fresh analysis'}
+            hint={
+              hasValuation
+                ? `Damage-adjusted market (${currencySymbol})`
+                : 'Run fresh analysis'
+            }
             variant={hasValuation ? 'primary' : 'muted'}
           />
           {isErpBookNbv && hasBookNbv && (

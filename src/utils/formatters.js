@@ -101,24 +101,63 @@ export function resolveConditionLabel(grade, overallScore) {
   return 'Poor';
 }
 
+import { getMarketConfig } from '../constants/markets';
+
+const CURRENCY_META = {
+  INR: { symbol: '₹', locale: 'en-IN' },
+  USD: { symbol: '$', locale: 'en-US' },
+  GBP: { symbol: '£', locale: 'en-GB' },
+};
+
+/** @param {string} [currency] */
+export function getCurrencyMeta(currency = 'INR') {
+  const key = (currency || 'INR').toUpperCase();
+  return CURRENCY_META[key] || CURRENCY_META.INR;
+}
+
+/**
+ * Read display range from valuation amount; falls back to legacy `inr` for old history.
+ * @param {object | null | undefined} valuation
+ * @param {'as_is' | 'nbv' | 'like_new_reference'} field
+ * @returns {{ range: { min: number, max: number }, currency: string } | null}
+ */
+export function getValuationRange(valuation, field) {
+  const amount = valuation?.[field];
+  if (!amount) return null;
+  if (amount.display?.min != null && amount.display?.max != null) {
+    return { range: amount.display, currency: amount.display_currency || 'INR' };
+  }
+  if (amount.inr?.min != null && amount.inr?.max != null) {
+    return { range: amount.inr, currency: 'INR' };
+  }
+  return null;
+}
+
 /**
  * @param {{ min?: number, max?: number } | null | undefined} range
  * @param {string} [symbol]
+ * @param {string} [locale]
  */
-export function formatMoneyRange(range, symbol = '₹') {
+export function formatMoneyRange(range, symbol = '₹', locale) {
   if (!range || range.min == null || range.max == null) return '—';
   const minNum = Number(range.min);
   const maxNum = Number(range.max);
   if (Number.isNaN(minNum) || Number.isNaN(maxNum)) return '—';
-  const locale = symbol === '₹' ? 'en-IN' : undefined;
-  const min = minNum.toLocaleString(locale, { maximumFractionDigits: 0 });
-  const max = maxNum.toLocaleString(locale, { maximumFractionDigits: 0 });
+  const fmtLocale = locale ?? (symbol === '₹' ? 'en-IN' : undefined);
+  const min = minNum.toLocaleString(fmtLocale, { maximumFractionDigits: 0 });
+  const max = maxNum.toLocaleString(fmtLocale, { maximumFractionDigits: 0 });
   return `${symbol}${min} – ${symbol}${max}`;
+}
+
+/** Format a money range in the given display currency. */
+export function formatDisplayMoneyRange(range, currency = 'INR') {
+  const { symbol, locale } = getCurrencyMeta(currency);
+  return formatMoneyRange(range, symbol, locale);
 }
 
 /** Format an INR money range for India client display. */
 export function formatInrMoneyRange(range) {
-  return formatMoneyRange(range, '₹');
+  return formatDisplayMoneyRange(range, 'INR');
 }
 
 /**
@@ -136,7 +175,8 @@ export function formatInrAmount(value) {
  * @param {object | null | undefined} erpVerification
  * @param {object | null | undefined} erpContext
  */
-export function formatBookNbvDisplay(valuation, erpVerification, erpContext) {
+export function formatBookNbvDisplay(valuation, erpVerification, erpContext, displayCurrency) {
+  const currency = displayCurrency || valuation?.nbv?.display_currency || 'INR';
   const exact =
     erpVerification?.erp_book_nbv_inr ??
     erpContext?.book_nbv_inr ??
@@ -148,7 +188,25 @@ export function formatBookNbvDisplay(valuation, erpVerification, erpContext) {
   if (valuation?.nbv?.method === 'erp_book_nbv' && exact != null) {
     return formatInrAmount(exact);
   }
-  return formatInrMoneyRange(valuation?.nbv?.inr);
+  const nbvRange = getValuationRange(valuation, 'nbv');
+  return formatDisplayMoneyRange(nbvRange?.range, nbvRange?.currency || currency);
+}
+
+/** Resolve subtitle and icon currency from stored analysis policy or market region. */
+export function getValuationDisplayMeta(analysisPolicy) {
+  const region = analysisPolicy?.market_region;
+  const currency = analysisPolicy?.display_currency;
+  if (currency) {
+    const meta = getCurrencyMeta(currency);
+    const market = region ? getMarketConfig(region) : null;
+    return {
+      currency,
+      symbol: meta.symbol,
+      subtitle: market?.subtitle || `${currency} market estimates`,
+    };
+  }
+  const market = getMarketConfig(region || 'IN');
+  return { currency: market.currency, symbol: market.symbol, subtitle: market.subtitle };
 }
 
 /** @param {object | null | undefined} valuation */

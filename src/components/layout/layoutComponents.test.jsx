@@ -1,20 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { AppProvider } from '../../context/AppContext';
+import { renderWithProviders } from '../../test/testUtils';
 import { AppHeader } from './AppHeader';
 import { AppFooter } from './AppFooter';
 import { PageWrapper } from './PageWrapper';
 
 describe('Layout components', () => {
   it('AppHeader renders logo and nav links', () => {
-    render(
-      <AppProvider>
-        <MemoryRouter>
-          <AppHeader />
-        </MemoryRouter>
-      </AppProvider>,
-    );
+    renderWithProviders(<AppHeader />, { route: '/' });
     expect(screen.getByRole('link', { name: 'Home' })).toBeInTheDocument();
     expect(screen.getByAltText('AssetCues')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Capture' })).toHaveAttribute('href', '/capture');

@@ -1,3 +1,4 @@
+import { DEFAULT_MARKET_REGION, getMarketConfig } from '../constants/markets';
 import {
   UPLOAD_MODE_API_ROUTES,
   UPLOAD_PROCESSING_MODES,
@@ -38,7 +39,7 @@ export function resolveAnalysisEndpoint(processingMode) {
 /**
  * @param {Array<{ file?: File, name?: string }>} images
  * @param {import('../constants/uploadMode').UploadProcessingMode} processingMode
- * @param {{ locale?: string }} [options]
+ * @param {{ locale?: string, marketRegion?: string }} [options]
  */
 export async function analyzeAssetsOnServer(images, processingMode, options = {}) {
   abortActiveLocalAnalyze();
@@ -48,7 +49,9 @@ export async function analyzeAssetsOnServer(images, processingMode, options = {}
 
   const url = resolveAnalysisEndpoint(processingMode);
   const formData = new FormData();
-  const locale = options.locale ?? DEFAULT_LOCALE;
+  const marketRegion = (options.marketRegion || DEFAULT_MARKET_REGION).toUpperCase();
+  const market = getMarketConfig(marketRegion);
+  const locale = options.locale ?? market.locale ?? DEFAULT_LOCALE;
 
   for (const img of images) {
     if (!img.file) {
@@ -58,6 +61,7 @@ export async function analyzeAssetsOnServer(images, processingMode, options = {}
     formData.append('images', img.file, filename);
   }
   formData.append('locale', locale);
+  formData.append('market_region', marketRegion);
   formData.append('processing_mode', processingMode);
 
   const timeoutId = setTimeout(() => controller.abort(), ANALYZE_TIMEOUT_MS);

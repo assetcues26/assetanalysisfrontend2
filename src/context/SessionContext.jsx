@@ -32,7 +32,7 @@ const LAPTOP_SYNC_PATHS = ['/upload', '/capture', '/batch'];
 export function SessionProvider({ children }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { uploadProcessingMode, showToast, maxImages } = useApp();
+  const { uploadProcessingMode, showToast, maxImages, marketRegion } = useApp();
   const { batchImages, clearBatch } = useBatchContext();
 
   const [enabled, setEnabled] = useState(CAPTURE_SESSION_ENABLED);
@@ -136,7 +136,7 @@ export function SessionProvider({ children }) {
     if (!token) return null;
     analysisCancelledRef.current = false;
     try {
-      const result = await analyzeCaptureSession(token);
+      const result = await analyzeCaptureSession(token, { marketRegion });
       if (analysisCancelledRef.current) return null;
       if (result.status === 'analyzing' || result.status === 'completed') {
         await refreshSession(token);
@@ -147,7 +147,7 @@ export function SessionProvider({ children }) {
       showToast(err?.message || 'Analysis could not start', 'error');
       return null;
     }
-  }, [token, refreshSession, showToast]);
+  }, [token, refreshSession, showToast, marketRegion]);
 
   const clearSessionImages = useCallback(
     async (activeToken, images) => {

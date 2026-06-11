@@ -62,6 +62,28 @@ describe('AssetResultCard', () => {
     expect(screen.getByText(/Original uploads \(2\)/i)).toBeInTheDocument();
   });
 
+  it('renders US dollar valuation from stored analysis policy', () => {
+    render(
+      <AppProvider>
+        <AssetResultCard
+          result={{
+            ...SEED_HISTORY[0],
+            analysis_policy: { market_region: 'US', display_currency: 'USD' },
+            valuation: {
+              as_is: {
+                display: { min: 1200, max: 1500 },
+                display_currency: 'USD',
+              },
+            },
+          }}
+          images={[]}
+          showExport={false}
+        />
+      </AppProvider>,
+    );
+    expect(screen.getAllByText(/\$1,200 – \$1,500/).length).toBeGreaterThan(0);
+  });
+
   it('expands long description', async () => {
     const entry = {
       ...SEED_HISTORY[0],

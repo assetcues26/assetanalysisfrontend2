@@ -11,13 +11,15 @@ import {
   UPLOAD_MODE_LABELS,
   UPLOAD_PROCESSING_MODES,
 } from '../../constants/uploadMode';
+import { MARKET_OPTIONS } from '../../constants/markets';
 
 function Harness() {
-  const { uploadProcessingMode } = useApp();
+  const { uploadProcessingMode, marketRegion } = useApp();
   return (
     <>
       <LandingSettings />
       <span data-testid="upload-mode">{uploadProcessingMode}</span>
+      <span data-testid="market-region">{marketRegion}</span>
     </>
   );
 }
@@ -57,6 +59,26 @@ describe('LandingSettings', () => {
       expect(screen.getByTestId('upload-mode')).toHaveTextContent(
         UPLOAD_PROCESSING_MODES.DIRECT,
       );
+    });
+  });
+
+  it('updates market region in app context when selected', async () => {
+    vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: { get: () => 'application/json' },
+      json: async () => ({ items: [], total: 0, limit: 100, offset: 0 }),
+    });
+
+    const user = userEvent.setup();
+    renderSettings();
+
+    await user.click(screen.getByLabelText('App settings'));
+    const usMarket = MARKET_OPTIONS.find((m) => m.id === 'US');
+    await user.click(screen.getByLabelText(new RegExp(usMarket.label, 'i')));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('market-region')).toHaveTextContent('US');
     });
   });
 
