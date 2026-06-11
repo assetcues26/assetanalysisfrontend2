@@ -29,9 +29,16 @@ export const MARKET_REGIONS = {
 
 export const MARKET_OPTIONS = Object.values(MARKET_REGIONS);
 
-export const DEFAULT_MARKET_REGION = 'IN';
+function readEnvDefaultMarketRegion() {
+  const raw = import.meta.env.VITE_DEFAULT_MARKET_REGION?.trim().toUpperCase();
+  if (raw === 'IN' || raw === 'US' || raw === 'GB') return raw;
+  return 'IN';
+}
+
+/** Default region for new users (VITE_DEFAULT_MARKET_REGION on Vercel / .env.local). */
+export const DEFAULT_MARKET_REGION = readEnvDefaultMarketRegion();
 
 export function getMarketConfig(region) {
   const key = (region || DEFAULT_MARKET_REGION).toUpperCase();
-  return MARKET_REGIONS[key] || MARKET_REGIONS.IN;
+  return MARKET_REGIONS[key] || MARKET_REGIONS[DEFAULT_MARKET_REGION] || MARKET_REGIONS.IN;
 }

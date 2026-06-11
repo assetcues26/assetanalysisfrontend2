@@ -6,7 +6,7 @@ import {
   fetchCaptureSession,
   isSessionUnavailableError,
 } from '../services/sessionApi';
-import { readStoredMarketRegion } from '../utils/marketStorage';
+import { DEFAULT_MARKET_REGION } from '../constants/markets';
 
 const POLL_MS = 1000;
 const ANALYZE_STALE_MS = 90_000;
@@ -124,10 +124,13 @@ export function useMobileSession(token, options = {}) {
     sawAnalyzingRef.current = false;
     analyzingSinceRef.current = null;
     try {
+      const latest = await refresh();
+      const sessionRegion =
+        latest?.market_region || session?.market_region || DEFAULT_MARKET_REGION;
       const result = await analyzeCaptureSession(token, {
-        marketRegion: readStoredMarketRegion(),
+        marketRegion: sessionRegion,
       });
-      const data = await refresh();
+      const data = latest ?? (await refresh());
       if (result.status === 'completed' && result.entry_id) {
         navigate(`/result/${result.entry_id}`, { replace: true });
         return result;
@@ -143,7 +146,7 @@ export function useMobileSession(token, options = {}) {
       setError(err?.message || 'Analysis failed');
       return null;
     }
-  }, [token, refresh, navigate, seedImageCount]);
+  }, [token, refresh, navigate, seedImageCount, session?.market_region]);
 
   const cancelAnalysis = useCallback(
     async ({ clearImages = false } = {}) => {

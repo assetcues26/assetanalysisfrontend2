@@ -72,6 +72,7 @@ export function SessionProvider({ children }) {
     try {
       const created = await createCaptureSession({
         processing_mode: uploadProcessingMode,
+        market_region: marketRegion,
       });
       const activeToken = created.session_token;
       setToken(activeToken);
@@ -95,7 +96,7 @@ export function SessionProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [enabled, uploadProcessingMode, showToast]);
+  }, [enabled, uploadProcessingMode, showToast, marketRegion]);
 
   const uploadImage = useCallback(
     async (fileOrFiles, source = 'laptop') => {
