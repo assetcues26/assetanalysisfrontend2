@@ -93,6 +93,23 @@ describe('History components', () => {
     expect(screen.getByText('Apple Macbook Pro')).toBeInTheDocument();
   });
 
+  it('HistoryGrid shows only the expanded entry in focus mode', async () => {
+    const user = userEvent.setup();
+    renderHistory(<HistoryGrid entries={SEED_HISTORY} onDelete={vi.fn()} />);
+
+    expect(screen.getByText('Carrier Split AC Unit')).toBeInTheDocument();
+    expect(screen.getByText('Apple Macbook Pro')).toBeInTheDocument();
+
+    const macButtons = screen.getAllByRole('button', { name: /View details/i });
+    await user.click(macButtons[2]);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Carrier Split AC Unit')).not.toBeInTheDocument();
+      expect(screen.queryByText('Daikin Inverter AC')).not.toBeInTheDocument();
+      expect(screen.getAllByText('Apple Macbook Pro').length).toBeGreaterThan(0);
+    });
+  });
+
   it('HistoryAssetCard expands with full report for in-memory entries', async () => {
     const onDelete = vi.fn();
     const onToggleExpand = vi.fn();

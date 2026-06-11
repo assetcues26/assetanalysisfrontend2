@@ -66,6 +66,7 @@ export function CompactHeader({
   left,
   right,
   variant = 'light',
+  className = '',
 }) {
   const isDark = variant === 'dark';
   const label = ariaLabel || (typeof title === 'string' ? title : undefined);
@@ -75,7 +76,7 @@ export function CompactHeader({
       aria-label={label}
       className={`sticky top-0 z-40 grid h-14 min-h-[3.5rem] grid-cols-[auto_1fr_auto] items-center gap-2 border-b px-safe pt-safe backdrop-blur-md ${
         isDark ? 'border-gray-800 bg-gray-950/95' : 'border-gray-200 bg-white/95'
-      }`}
+      } ${className}`.trim()}
     >
       <div className="flex shrink-0 items-center">{left}</div>
       <div className="flex min-w-0 items-center justify-center px-1">
