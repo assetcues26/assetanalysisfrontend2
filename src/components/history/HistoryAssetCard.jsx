@@ -91,30 +91,35 @@ export function HistoryAssetCard({ entry, onDelete, expanded, onToggleExpand, in
         className="w-full"
       >
         <CardBody className="group/card relative w-full overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-4 shadow-xl transition-shadow hover:shadow-2xl hover:shadow-blue-500/10 sm:p-5">
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            onClick={handleDelete}
-            aria-label="Delete asset"
-            className="absolute right-4 top-4 z-50 min-h-11 touch-manipulation border-0 bg-red-600 px-3 text-white shadow-lg hover:bg-red-700 focus-visible:bg-red-700 sm:right-5 sm:top-5"
-          >
-            <Trash className="-ms-1 me-1.5 shrink-0" size={16} strokeWidth={2} aria-hidden />
-            Delete
-          </Button>
-
-          <CardItem translateZ={50} className="w-full pr-24 text-neutral-800">
-            <ConditionBadge
-              condition={entry.conditionDetail?.grade ?? entry.condition}
-              overallScore={entry.conditionDetail?.overall_score}
-            />
-            <h3 className="mt-2 truncate text-lg font-bold sm:text-xl">{entry.asset_name}</h3>
-            <p className="mt-1 truncate font-mono text-xs text-neutral-500">
-              {entry.detected_tag_number_raw}
-            </p>
-            <p className="mt-0.5 text-xs text-neutral-400">
-              {formatRelativeTime(entry.processedAt)}
-            </p>
+          <CardItem translateZ={50} className="w-full text-neutral-800">
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <ConditionBadge
+                  condition={entry.conditionDetail?.grade ?? entry.condition}
+                  overallScore={entry.conditionDetail?.overall_score}
+                />
+                <h3 className="mt-2 line-clamp-2 text-lg font-bold leading-snug break-words sm:text-xl">
+                  {entry.asset_name}
+                </h3>
+                <p className="mt-1 truncate font-mono text-xs text-neutral-500">
+                  {entry.detected_tag_number_raw}
+                </p>
+                <p className="mt-0.5 text-xs text-neutral-400">
+                  {formatRelativeTime(entry.processedAt)}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                aria-label="Delete asset"
+                className="z-10 min-h-11 shrink-0 touch-manipulation border-0 bg-red-600 px-3 text-white shadow-lg hover:bg-red-700 focus-visible:bg-red-700"
+              >
+                <Trash className="-ms-1 me-1.5 shrink-0" size={16} strokeWidth={2} aria-hidden />
+                Delete
+              </Button>
+            </div>
           </CardItem>
 
           <CardItem translateZ={80} className="relative z-10 mt-4 w-full">

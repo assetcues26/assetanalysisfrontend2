@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { PackageOpen, SearchX } from 'lucide-react';
 import { AuroraPageLayout } from '../components/layout/AuroraPageLayout';
-import { CompactHeader } from '../components/layout/AppHeader';
 import { PageWrapper } from '../components/layout/PageWrapper';
 import { Badge } from '../components/ui/Badge';
 import { BackButton } from '../components/ui/BackButton';
@@ -40,17 +39,11 @@ export function HistoryPage() {
 
   const recentEntries = sortedHistory.slice(0, 5);
 
-  const focusedEntry = focusedEntryId
-    ? history.find((entry) => entry.id === focusedEntryId)
-    : null;
-
   return (
-    <AuroraPageLayout heroClassName="flex flex-col">
-      <CompactHeader
-        className="top-14 shrink-0 sm:top-16"
-        title={focusedEntryId ? focusedEntry?.asset_name || 'Asset details' : 'Asset History'}
-        left={
-          focusedEntryId ? (
+    <AuroraPageLayout>
+      <PageWrapper className="py-6 sm:py-8">
+        <header className="mb-6 flex items-center gap-2 border-b border-gray-200/80 pb-4 sm:gap-3">
+          {focusedEntryId ? (
             <BackButton
               label="All assets"
               aria-label="Back to all assets"
@@ -58,16 +51,15 @@ export function HistoryPage() {
             />
           ) : (
             <BackButton label="Home" onClick={() => navigate('/')} />
-          )
-        }
-        right={
+          )}
+          <h1 className="min-w-0 flex-1 truncate text-center text-base font-semibold text-gray-900 sm:text-lg">
+            {focusedEntryId ? 'Asset details' : 'Asset History'}
+          </h1>
           <Badge variant="count" className="shrink-0">
             {hydrated ? `${historyCount} items` : 'Loading…'}
           </Badge>
-        }
-      />
+        </header>
 
-      <PageWrapper className="flex-1 py-6 sm:py-8">
         <section className="pb-8">
           {!focusedEntryId ? (
             <div className="-mx-1 mb-6 flex gap-1 overflow-x-auto border-b border-gray-200/80 px-1 pb-px scrollbar-thin">
