@@ -73,12 +73,12 @@ export function CompactHeader({
   return (
     <header
       aria-label={label}
-      className={`sticky top-0 z-40 flex h-14 min-h-[3.5rem] items-center justify-between border-b px-safe pt-safe backdrop-blur-md ${
+      className={`sticky top-0 z-40 grid h-14 min-h-[3.5rem] grid-cols-[auto_1fr_auto] items-center gap-2 border-b px-safe pt-safe backdrop-blur-md ${
         isDark ? 'border-gray-800 bg-gray-950/95' : 'border-gray-200 bg-white/95'
       }`}
     >
-      <div className="flex min-w-0 flex-1 items-center gap-2">{left}</div>
-      <div className="flex shrink-0 items-center justify-center px-2">
+      <div className="flex shrink-0 items-center">{left}</div>
+      <div className="flex min-w-0 items-center justify-center px-1">
         {center ?? (
           <h1
             className={`truncate text-center text-sm font-semibold sm:text-base ${
@@ -89,22 +89,25 @@ export function CompactHeader({
           </h1>
         )}
       </div>
-      <div className="flex min-w-0 flex-1 items-center justify-end gap-2">{right}</div>
+      <div className="flex shrink-0 items-center justify-end gap-2">{right}</div>
     </header>
   );
 }
 
-export function ProgressPill({ current, max, variant = 'light' }) {
+export function ProgressPill({ current, max, variant = 'light', compact = false, bump = false }) {
   const isDark = variant === 'dark';
   return (
     <span
-      className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+      className={`inline-flex items-center justify-center rounded-full border font-semibold tabular-nums leading-none ${
+        compact ? 'min-w-[3rem] px-2.5 py-1.5 text-[11px] tracking-tight' : 'px-3 py-1 text-xs'
+      } ${bump ? 'capture-pill-bump' : ''} ${
         isDark
           ? 'border-gray-600 bg-gray-800 text-blue-300'
           : 'border-blue-200 bg-blue-50 text-blue-700'
       }`}
+      aria-label={`${current} of ${max} photos`}
     >
-      {current} / {max}
+      {compact ? `${current}/${max}` : `${current} / ${max}`}
     </span>
   );
 }
