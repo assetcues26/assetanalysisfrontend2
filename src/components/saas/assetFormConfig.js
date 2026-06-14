@@ -40,11 +40,11 @@ export const LOOKUP_FIELD_MAP = {
 };
 
 export const ASSET_FORM_FIELDS = [
-  { key: 'assetid', label: 'Asset ID', hint: 'Auto-generated if empty' },
+  { key: 'assetid', label: 'Asset ID', hint: 'Auto-assigned', autoAssign: true },
   { key: 'assetname', label: 'Asset name', required: true },
   { key: 'description', label: 'Description', type: 'textarea' },
-  { key: 'tagnumber', label: 'Tag number', required: true },
-  { key: 'assetnumber', label: 'Asset number', required: true },
+  { key: 'tagnumber', label: 'Tag number', required: true, autoAssign: true },
+  { key: 'assetnumber', label: 'Asset number', required: true, autoAssign: true },
   { key: 'assetclassid', label: 'Asset class ID', optional: true },
   { key: 'assetclassname', label: 'Asset class name', required: true },
   { key: 'categoryid', label: 'Category ID', optional: true },
@@ -211,8 +211,45 @@ export function buildSessionDraft(values, mode) {
 }
 
 /**
+ * Apply lookup dropdown selection in one patch (avoids React batching dropping id/name pairs).
+ * @param {string} idKey
+ * @param {string} nameKey
+ * @param {string} id
+ * @param {string} label
+ */
+export function buildLookupChangePatch(idKey, nameKey, id, label) {
+  const patch = { [idKey]: id, [nameKey]: label };
+
+  if (idKey === 'assetclassid') {
+    Object.assign(patch, {
+      categoryid: '',
+      categoryname: '',
+      subcategoryid: '',
+      subcategoryname: '',
+      makemodelid: '',
+      makemodelname: '',
+    });
+  } else if (idKey === 'categoryid') {
+    Object.assign(patch, {
+      subcategoryid: '',
+      subcategoryname: '',
+      makemodelid: '',
+      makemodelname: '',
+    });
+  } else if (idKey === 'subcategoryid') {
+    Object.assign(patch, {
+      makemodelid: '',
+      makemodelname: '',
+    });
+  }
+
+  return patch;
+}
+
+/**
  * @param {Record<string, string>} values
  * @param {'images_only' | 'full_mobile'} mode
+ * @param {string} mobileStep
  */
 export function buildMobileSessionDraft(values, mode, mobileStep) {
   return {

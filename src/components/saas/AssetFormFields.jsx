@@ -1,48 +1,44 @@
 import {
   ASSET_FORM_FIELDS,
   LOOKUP_FIELD_MAP,
+  buildLookupChangePatch,
 } from './assetFormConfig';
 import { LookupSelect } from './LookupSelect';
 import { AssetDatePicker } from './AssetDatePicker';
+import { LookupIdHint } from './LookupIdHint';
 
 /**
  * @param {{
  *   values: Record<string, string>,
  *   onChange: (key: string, value: string) => void,
+ *   onPatch?: (patch: Record<string, string>) => void,
  *   compact?: boolean,
  *   fieldKeys?: string[],
  *   hideAssetId?: boolean,
+ *   readOnlyAutoAssign?: boolean,
  * }} props
  */
 export function AssetFormFields({
   values,
   onChange,
+  onPatch,
   compact = false,
   fieldKeys,
   hideAssetId = false,
+  readOnlyAutoAssign = true,
 }) {
   const labelClass = compact ? 'text-xs font-medium text-gray-700' : 'text-sm font-medium text-gray-700';
   const inputClass =
     'mt-1 w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm shadow-sm transition-colors focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+  const readOnlyClass =
+    'mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700 shadow-sm';
 
-  const handleLookup = (idKey, nameKey, id, label) => {
-    onChange(idKey, id);
-    onChange(nameKey, label);
-    if (idKey === 'assetclassid') {
-      onChange('categoryid', '');
-      onChange('categoryname', '');
-      onChange('subcategoryid', '');
-      onChange('subcategoryname', '');
-      onChange('makemodelid', '');
-      onChange('makemodelname', '');
-    } else if (idKey === 'categoryid') {
-      onChange('subcategoryid', '');
-      onChange('subcategoryname', '');
-      onChange('makemodelid', '');
-      onChange('makemodelname', '');
-    } else if (idKey === 'subcategoryid') {
-      onChange('makemodelid', '');
-      onChange('makemodelname', '');
+  const applyLookup = (idKey, nameKey, id, label) => {
+    const patch = buildLookupChangePatch(idKey, nameKey, id, label);
+    if (onPatch) {
+      onPatch(patch);
+    } else {
+      Object.entries(patch).forEach(([key, val]) => onChange(key, val));
     }
   };
 
@@ -72,7 +68,7 @@ export function AssetFormFields({
               parentId={parentId}
               value={values[lookup.idKey]}
               label={values[lookup.nameKey]}
-              onChange={(id, label) => handleLookup(lookup.idKey, lookup.nameKey, id, label)}
+              onChange={(id, label) => applyLookup(lookup.idKey, lookup.nameKey, id, label)}
               placeholder={`Select ${(nameField?.label || field.label).toLowerCase()}`}
               required={Boolean(nameField?.required)}
               disabled={Boolean(lookup.parentKey && !parentId)}
@@ -96,6 +92,30 @@ export function AssetFormFields({
               required={field.required}
             />
           </div>
+        </div>
+      );
+    }
+
+    if (field.autoAssign && readOnlyAutoAssign) {
+      return (
+        <div key={key}>
+          <label className={labelClass}>
+            {field.label}
+            {field.required && <span className="text-red-500"> *</span>}
+          </label>
+          <input
+            type="text"
+            readOnly
+            value={values[field.key] || ''}
+            placeholder={field.hint || 'Assigning…'}
+            className={readOnlyClass}
+            aria-readonly="true"
+          />
+          {values[field.key] ? (
+            <LookupIdHint id={values[field.key]} label="Auto-assigned" />
+          ) : (
+            <p className="mt-1 text-xs text-gray-500">{field.hint || 'Auto-assigned when form opens'}</p>
+          )}
         </div>
       );
     }

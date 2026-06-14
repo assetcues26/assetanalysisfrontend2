@@ -160,7 +160,7 @@ export function AssetsDashboardPage() {
     setBulkBusy(true);
     try {
       await bulkAnalyze();
-      showToast('AI re-run started for selected assets', 'success');
+      showToast('AI analysis queued for selected assets', 'success');
     } finally {
       setBulkBusy(false);
     }
@@ -252,7 +252,7 @@ export function AssetsDashboardPage() {
         <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
           <span className="text-sm font-medium text-blue-900">{selectedIds.length} selected</span>
           <Button variant="outline" size="sm" disabled={bulkBusy} onClick={handleBulkAnalyze}>
-            Re-run AI
+            Run AI analysis
           </Button>
           <Button variant="outline" size="sm" disabled={bulkBusy} onClick={() => exportCsv()}>
             <Download size={14} className="mr-1" />
@@ -376,8 +376,8 @@ export function AssetsDashboardPage() {
                         )}
                         <RowAction
                           icon={RefreshCw}
-                          label="Re-run AI"
-                          disabled={rerunningId === asset.id}
+                          label="Run AI"
+                          disabled={rerunningId === asset.id || !asset.asset_image_url}
                           onClick={() => handleRerun(asset.id)}
                         />
                         <RowAction

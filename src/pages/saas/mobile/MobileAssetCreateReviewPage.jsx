@@ -65,6 +65,7 @@ export function MobileAssetCreateReviewPage() {
         <AssetFormFields
           values={values}
           onChange={(key, val) => setValues((p) => ({ ...p, [key]: val }))}
+          onPatch={(patch) => setValues((p) => ({ ...p, ...patch }))}
           compact
           hideAssetId
         />

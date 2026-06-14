@@ -15,6 +15,7 @@ import { CreateAssetPage } from '../pages/saas/CreateAssetPage';
 import { SaasAssetDetailPage } from '../pages/saas/SaasAssetDetailPage';
 import { EditAssetPage } from '../pages/saas/EditAssetPage';
 import { AnalysisDeepDivePage } from '../pages/saas/AnalysisDeepDivePage';
+import { SaasSettingsPage } from '../pages/saas/SaasSettingsPage';
 import { MobileAssetCreateAddPhotosPage } from '../pages/saas/mobile/MobileAssetCreateAddPhotosPage';
 import { MobileAssetCreateLandingPage } from '../pages/saas/mobile/MobileAssetCreateLandingPage';
 import { MobileAssetCreatePhotosPage } from '../pages/saas/mobile/MobileAssetCreatePhotosPage';
@@ -59,6 +60,7 @@ export function AppRoutes() {
               <Route path="/assets/:id" element={<SaasAssetDetailPage />} />
               <Route path="/assets/:id/edit" element={<EditAssetPage />} />
               <Route path="/assets/:id/analysis/:aid" element={<AnalysisDeepDivePage />} />
+              <Route path="/settings" element={<SaasSettingsPage />} />
             </Route>
             <Route path="/assets/create" element={<CreateAssetPage />} />
           </>

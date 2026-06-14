@@ -118,8 +118,9 @@ async function postSaasUpload(url, requestBody, onProgress) {
  * @param {Record<string, string|number|undefined>} metadata
  * @param {File} assetImage
  * @param {File} [barcodeImage]
+ * @param {{ autoAnalyze?: boolean, skipAi?: boolean }} [options]
  */
-export async function createSaasAsset(metadata, assetImage, barcodeImage) {
+export async function createSaasAsset(metadata, assetImage, barcodeImage, options = {}) {
   const compressedAsset = await prepareSaasPhotoForUpload(assetImage);
   const compressedBarcode = barcodeImage
     ? await prepareSaasPhotoForUpload(barcodeImage)
@@ -136,7 +137,15 @@ export async function createSaasAsset(metadata, assetImage, barcodeImage) {
     form.append('barcodeimage', compressedBarcode);
   }
 
-  const response = await fetch(`${SAAS_BASE}/assets`, {
+  const search = new URLSearchParams();
+  if (options.autoAnalyze === false) {
+    search.set('auto_analyze', 'false');
+  }
+  if (options.skipAi) {
+    search.set('skip_ai', 'true');
+  }
+
+  const response = await fetch(`${SAAS_BASE}/assets?${search}`, {
     method: 'POST',
     headers: saasHeaders(),
     body: form,
@@ -257,8 +266,9 @@ export async function uploadAssetCreateSessionImage(token, fieldName, file) {
 /**
  * @param {string} token
  * @param {Record<string, string|number|undefined>} metadata
+ * @param {{ autoAnalyze?: boolean, skipAi?: boolean }} [options]
  */
-export async function completeAssetCreateSession(token, metadata) {
+export async function completeAssetCreateSession(token, metadata, options = {}) {
   const form = new FormData();
   Object.entries(metadata).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -266,8 +276,16 @@ export async function completeAssetCreateSession(token, metadata) {
     }
   });
 
+  const search = new URLSearchParams();
+  if (options.autoAnalyze === false) {
+    search.set('auto_analyze', 'false');
+  }
+  if (options.skipAi) {
+    search.set('skip_ai', 'true');
+  }
+
   const response = await fetch(
-    `${SAAS_BASE}/asset-sessions/${encodeURIComponent(token)}/complete`,
+    `${SAAS_BASE}/asset-sessions/${encodeURIComponent(token)}/complete?${search}`,
     {
       method: 'POST',
       headers: saasHeaders(),
@@ -294,6 +312,30 @@ export async function fetchLookups(type, parentId) {
 
 export async function fetchDashboardStats() {
   const response = await fetch(`${SAAS_BASE}/assets/stats`, { headers: saasHeaders() });
+  const body = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(formatApiErrorMessage(body, response.status));
+  }
+  return body;
+}
+
+/**
+ * @returns {Promise<{ assetid: string, assetnumber: string, tagnumber: string }>}
+ */
+export async function fetchNextAssetIdentifiers() {
+  const response = await fetch(`${SAAS_BASE}/assets/next-identifiers`, { headers: saasHeaders() });
+  const body = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(formatApiErrorMessage(body, response.status));
+  }
+  return body;
+}
+
+export async function clearAllSaasAnalyses() {
+  const response = await fetch(`${SAAS_BASE}/analyses`, {
+    method: 'DELETE',
+    headers: saasHeaders(),
+  });
   const body = await parseJsonResponse(response);
   if (!response.ok) {
     throw new Error(formatApiErrorMessage(body, response.status));

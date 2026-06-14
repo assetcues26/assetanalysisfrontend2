@@ -1,15 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  bulkAnalyzeSaasAssets,
   bulkDeleteSaasAssets,
   exportAssetsCsv,
   fetchActivity,
   fetchDashboardStats,
   fetchSaasAssetsList,
-  runSaasAssetAnalysis,
 } from '../services/saasAssetsApi';
 import { isAssetAnalyzing, withAnalyzingState } from '../utils/saasAssetState';
 import { mergePreservingImageUrls } from '../utils/mergeAssetList';
+import {
+  enqueueAssetAnalysis,
+  enqueueAssetAnalysesSequential,
+  getAnalysisQueueLength,
+  isAnalysisQueueBusy,
+} from '../utils/analysisQueue';
 
 const SaasAssetsContext = createContext(null);
 
@@ -36,6 +40,7 @@ function computeStatsFromAssets(items, total) {
     else if (status === 'fail') stats.fail_count += 1;
     else if (status === 'error') stats.error += 1;
     else if (status === 'analyzing') stats.analyzing += 1;
+    else if (status === 'ai_disabled') stats.pending += 1;
     else stats.pending += 1;
   }
   return stats;
@@ -201,13 +206,31 @@ export function SaasAssetsProvider({ children }) {
     async (assetId) => {
       markAssetAnalyzing(assetId);
       try {
-        await runSaasAssetAnalysis(assetId);
+        await enqueueAssetAnalysis(assetId, {
+          onStart: (id) => markAssetAnalyzing(id),
+        });
         await load({ silent: true });
         await loadStats();
       } catch (err) {
         await load({ silent: true });
         throw err;
       }
+    },
+    [load, loadStats, markAssetAnalyzing],
+  );
+
+  const queueNewAssetAnalysis = useCallback(
+    async (assetId) => {
+      markAssetAnalyzing(assetId);
+      enqueueAssetAnalysis(assetId, {
+        onStart: (id) => markAssetAnalyzing(id),
+        onDone: async () => {
+          await load({ silent: true });
+          await loadStats();
+        },
+      }).catch(() => {
+        load({ silent: true });
+      });
     },
     [load, loadStats, markAssetAnalyzing],
   );
@@ -224,9 +247,12 @@ export function SaasAssetsProvider({ children }) {
 
   const bulkAnalyze = useCallback(async () => {
     if (!selectedIds.length) return;
-    markAssetsAnalyzing(selectedIds);
+    const ids = [...selectedIds];
+    markAssetsAnalyzing(ids);
     try {
-      await bulkAnalyzeSaasAssets(selectedIds);
+      await enqueueAssetAnalysesSequential(ids, {
+        onStart: (id) => markAssetAnalyzing(id),
+      });
       setSelectedIds([]);
       await load({ silent: true });
       await loadStats();
@@ -234,7 +260,20 @@ export function SaasAssetsProvider({ children }) {
       await load({ silent: true });
       throw err;
     }
-  }, [selectedIds, load, loadStats, markAssetsAnalyzing]);
+  }, [selectedIds, load, loadStats, markAssetAnalyzing, markAssetsAnalyzing]);
+
+  const bulkAnalyzeIds = useCallback(
+    async (assetIds) => {
+      if (!assetIds.length) return;
+      markAssetsAnalyzing(assetIds);
+      await enqueueAssetAnalysesSequential(assetIds, {
+        onStart: (id) => markAssetAnalyzing(id),
+      });
+      await load({ silent: true });
+      await loadStats();
+    },
+    [load, loadStats, markAssetAnalyzing, markAssetsAnalyzing],
+  );
 
   const bulkDelete = useCallback(async () => {
     if (!selectedIds.length) return;
@@ -252,7 +291,7 @@ export function SaasAssetsProvider({ children }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'saas-assets.csv';
+    a.download = 'assetcues-assets.csv';
     a.click();
     URL.revokeObjectURL(url);
   }, [search, aiStatusFilter]);
@@ -284,8 +323,10 @@ export function SaasAssetsProvider({ children }) {
       refresh: load,
       refreshAll,
       runAnalysis,
+      queueNewAssetAnalysis,
       markAssetAnalyzing,
       bulkAnalyze,
+      bulkAnalyzeIds,
       bulkDelete,
       exportCsv,
     }),
@@ -306,8 +347,10 @@ export function SaasAssetsProvider({ children }) {
       load,
       refreshAll,
       runAnalysis,
+      queueNewAssetAnalysis,
       markAssetAnalyzing,
       bulkAnalyze,
+      bulkAnalyzeIds,
       bulkDelete,
       exportCsv,
       toggleSelected,

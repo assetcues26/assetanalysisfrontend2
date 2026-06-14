@@ -7,6 +7,8 @@ import {
   uploadAssetCreateSessionImage,
 } from '../services/saasAssetsApi';
 import { persistMobileCreateSuccess } from '../utils/mobileCreateSuccess';
+import { isAiAnalysisEnabled } from '../utils/saasAiSettings';
+import { enqueueAssetAnalysis } from '../utils/analysisQueue';
 
 const POLL_MS = 2000;
 
@@ -100,7 +102,14 @@ export function useAssetCreateSession(token) {
   const complete = useCallback(
     async (metadata) => {
       if (!token) return null;
-      const result = await completeAssetCreateSession(token, metadata);
+      const aiEnabled = isAiAnalysisEnabled();
+      const result = await completeAssetCreateSession(token, metadata, {
+        autoAnalyze: false,
+        skipAi: !aiEnabled,
+      });
+      if (aiEnabled && result.ai_status === 'pending') {
+        enqueueAssetAnalysis(result.asset_id).catch(() => {});
+      }
       const success = {
         aiStatus: result.ai_status,
         assetId: result.asset_id,

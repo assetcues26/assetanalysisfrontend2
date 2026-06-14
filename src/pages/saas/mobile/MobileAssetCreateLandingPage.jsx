@@ -24,6 +24,8 @@ import {
   validateWizardStep,
 } from '../../../components/saas/assetFormConfig';
 import { mobileCreateRoutes } from '../../../utils/mobileCreateRoutes';
+import { applyAutoIdentifiers } from '../../../utils/autoAssetIdentifiers';
+import { fetchNextAssetIdentifiers } from '../../../services/saasAssetsApi';
 
 export function MobileAssetCreateLandingPage() {
   const { token } = useParams();
@@ -34,17 +36,30 @@ export function MobileAssetCreateLandingPage() {
   const [saving, setSaving] = useState(false);
   const [openSection, setOpenSection] = useState('identity');
   const lastSyncedDraftRef = useRef('');
+  const [autoIds, setAutoIds] = useState(null);
 
   const formSteps = WIZARD_STEPS.filter((s) => s.id !== 'photos' && s.id !== 'review');
   const routes = mobileCreateRoutes(token, SESSION_MODE_FULL_MOBILE);
 
   useEffect(() => {
-    if (!session?.draft_json) return;
-    const sig = JSON.stringify(draftJsonToFormValues(session.draft_json));
+    fetchNextAssetIdentifiers().then(setAutoIds).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!session?.draft_json && !autoIds) return;
+    const sig = JSON.stringify({
+      draft: draftJsonToFormValues(session?.draft_json || {}),
+      autoIds,
+    });
     if (sig === lastSyncedDraftRef.current) return;
     lastSyncedDraftRef.current = sig;
-    setValues((prev) => mergeFormWithDraft(prev, session.draft_json));
-  }, [session?.draft_json]);
+    setValues((prev) => {
+      const merged = session?.draft_json
+        ? mergeFormWithDraft(prev, session.draft_json)
+        : prev;
+      return applyAutoIdentifiers(merged, autoIds);
+    });
+  }, [session?.draft_json, autoIds]);
 
   useEffect(() => {
     if (!session?.draft_json) return;
@@ -132,9 +147,9 @@ export function MobileAssetCreateLandingPage() {
                   <AssetFormFields
                     values={values}
                     onChange={(key, val) => setValues((p) => ({ ...p, [key]: val }))}
+                    onPatch={(patch) => setValues((p) => ({ ...p, ...patch }))}
                     compact
                     fieldKeys={fields}
-                    hideAssetId
                   />
                 </div>
               )}
