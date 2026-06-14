@@ -25,8 +25,11 @@ async function drainQueue() {
     const job = queue.shift();
     try {
       job.onStart?.(job.assetId);
-      await runSaasAssetAnalysis(job.assetId);
-      const status = await waitForAnalysisComplete(job.assetId);
+      const body = await runSaasAssetAnalysis(job.assetId);
+      let status = body?.ai_status || 'error';
+      if (status === 'analyzing') {
+        status = await waitForAnalysisComplete(job.assetId);
+      }
       job.onDone?.(job.assetId, status);
       job.resolve(status);
     } catch (err) {

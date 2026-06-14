@@ -74,13 +74,6 @@ export function SaasAssetsProvider({ children }) {
     );
   }, []);
 
-  const markAssetsAnalyzing = useCallback((assetIds) => {
-    const idSet = new Set(assetIds);
-    setAssets((prev) =>
-      prev.map((asset) => (idSet.has(asset.id) ? withAnalyzingState(asset) : asset)),
-    );
-  }, []);
-
   const load = useCallback(async (opts = {}) => {
     const silent = opts.silent === true;
     if (!silent) setLoading(true);
@@ -248,7 +241,6 @@ export function SaasAssetsProvider({ children }) {
   const bulkAnalyze = useCallback(async () => {
     if (!selectedIds.length) return;
     const ids = [...selectedIds];
-    markAssetsAnalyzing(ids);
     try {
       await enqueueAssetAnalysesSequential(ids, {
         onStart: (id) => markAssetAnalyzing(id),
@@ -260,19 +252,18 @@ export function SaasAssetsProvider({ children }) {
       await load({ silent: true });
       throw err;
     }
-  }, [selectedIds, load, loadStats, markAssetAnalyzing, markAssetsAnalyzing]);
+  }, [selectedIds, load, loadStats, markAssetAnalyzing]);
 
   const bulkAnalyzeIds = useCallback(
     async (assetIds) => {
       if (!assetIds.length) return;
-      markAssetsAnalyzing(assetIds);
       await enqueueAssetAnalysesSequential(assetIds, {
         onStart: (id) => markAssetAnalyzing(id),
       });
       await load({ silent: true });
       await loadStats();
     },
-    [load, loadStats, markAssetAnalyzing, markAssetsAnalyzing],
+    [load, loadStats, markAssetAnalyzing],
   );
 
   const bulkDelete = useCallback(async () => {
