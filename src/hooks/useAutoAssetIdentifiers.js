@@ -3,7 +3,7 @@ import { applyAutoIdentifiers } from '../utils/autoAssetIdentifiers';
 import { fetchNextAssetIdentifiers } from '../services/saasAssetsApi';
 
 /**
- * Fetch and apply server-suggested assetid / assetnumber / tagnumber when fields are empty.
+ * Fetch and apply server-suggested assetid / assetnumber when fields are empty.
  * @param {(patch: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void} setValues
  * @param {{ enabled?: boolean }} [options]
  */

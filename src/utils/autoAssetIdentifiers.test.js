@@ -10,7 +10,7 @@ describe('applyAutoIdentifiers', () => {
     expect(result).toEqual({
       assetid: 'AST-10006',
       assetnumber: 'FAR1005',
-      tagnumber: 'TAG1006',
+      tagnumber: '',
       assetname: 'Laptop',
     });
   });

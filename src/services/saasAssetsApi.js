@@ -320,7 +320,7 @@ export async function fetchDashboardStats() {
 }
 
 /**
- * @returns {Promise<{ assetid: string, assetnumber: string, tagnumber: string }>}
+ * @returns {Promise<{ assetid: string, assetnumber: string }>}
  */
 export async function fetchNextAssetIdentifiers() {
   const response = await fetch(`${SAAS_BASE}/assets/next-identifiers`, { headers: saasHeaders() });

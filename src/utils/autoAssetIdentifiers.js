@@ -1,11 +1,11 @@
 import { fetchNextAssetIdentifiers } from '../services/saasAssetsApi';
 
-export const AUTO_IDENTIFIER_KEYS = ['assetid', 'assetnumber', 'tagnumber'];
+export const AUTO_IDENTIFIER_KEYS = ['assetid', 'assetnumber'];
 
 /**
  * Fill empty unique identity fields with server-suggested values.
  * @param {Record<string, string>} values
- * @param {{ assetid?: string, assetnumber?: string, tagnumber?: string } | null | undefined} identifiers
+ * @param {{ assetid?: string, assetnumber?: string } | null | undefined} identifiers
  */
 export function applyAutoIdentifiers(values, identifiers) {
   if (!identifiers) return values;

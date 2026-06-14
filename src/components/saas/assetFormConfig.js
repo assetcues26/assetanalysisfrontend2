@@ -43,7 +43,7 @@ export const ASSET_FORM_FIELDS = [
   { key: 'assetid', label: 'Asset ID', hint: 'Auto-assigned', autoAssign: true },
   { key: 'assetname', label: 'Asset name', required: true },
   { key: 'description', label: 'Description', type: 'textarea' },
-  { key: 'tagnumber', label: 'Tag number', required: true, autoAssign: true },
+  { key: 'tagnumber', label: 'Tag number', required: true },
   { key: 'assetnumber', label: 'Asset number', required: true, autoAssign: true },
   { key: 'assetclassid', label: 'Asset class ID', optional: true },
   { key: 'assetclassname', label: 'Asset class name', required: true },
