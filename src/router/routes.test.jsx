@@ -4,6 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { renderAppAt, createTestImageFile, SEED_HISTORY, seedLocalHistory } from '../test/testUtils';
 import * as analysisService from '../services/analysisService';
 
+vi.mock('../config/features', () => ({
+  V6_DEMO_ENABLED: false,
+  CAPTURE_SESSION_ENABLED: true,
+  SAAS_MODULE_ENABLED: false,
+}));
+
 vi.mock('../services/analysisService', () => ({
   analyzeImages: vi.fn(),
 }));

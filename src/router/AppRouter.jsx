@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { CameraRouteSync } from '../components/capture/CameraRouteSync';
+import { SaasShellLayout } from '../components/saas/SaasShellLayout';
 import { LandingPage } from '../pages/LandingPage';
 import { CapturePage } from '../pages/CapturePage';
 import { UploadPage } from '../pages/UploadPage';
@@ -9,6 +10,18 @@ import { ProcessingPage } from '../pages/ProcessingPage';
 import { ResultPage } from '../pages/ResultPage';
 import { AssetDetailPage } from '../pages/AssetDetailPage';
 import { HistoryPage } from '../pages/HistoryPage';
+import { AssetsDashboardPage } from '../pages/saas/AssetsDashboardPage';
+import { CreateAssetPage } from '../pages/saas/CreateAssetPage';
+import { SaasAssetDetailPage } from '../pages/saas/SaasAssetDetailPage';
+import { EditAssetPage } from '../pages/saas/EditAssetPage';
+import { AnalysisDeepDivePage } from '../pages/saas/AnalysisDeepDivePage';
+import { MobileAssetCreateLandingPage } from '../pages/saas/mobile/MobileAssetCreateLandingPage';
+import { MobileAssetCreatePhotosPage } from '../pages/saas/mobile/MobileAssetCreatePhotosPage';
+import { MobileAssetCreatePhotosDonePage } from '../pages/saas/mobile/MobileAssetCreatePhotosDonePage';
+import { MobileAssetCreateCapturePage } from '../pages/saas/mobile/MobileAssetCreateCapturePage';
+import { MobileAssetCreateUploadPage } from '../pages/saas/mobile/MobileAssetCreateUploadPage';
+import { MobileAssetCreateReviewPage } from '../pages/saas/mobile/MobileAssetCreateReviewPage';
+import { MobileAssetCreateDonePage } from '../pages/saas/mobile/MobileAssetCreateDonePage';
 import { V6CatalogPage } from '../pages/v6/V6CatalogPage';
 import { V6AssetPage } from '../pages/v6/V6AssetPage';
 import { V6CapturePage } from '../pages/v6/V6CapturePage';
@@ -24,7 +37,7 @@ import { MobileUploadPage } from '../pages/scan/MobileUploadPage';
 import { MobileUploadSuccessPage } from '../pages/scan/MobileUploadSuccessPage';
 import { MobileWaitingPage } from '../pages/scan/MobileWaitingPage';
 import { SessionProvider } from '../context/SessionContext';
-import { V6_DEMO_ENABLED } from '../config/features';
+import { V6_DEMO_ENABLED, SAAS_MODULE_ENABLED } from '../config/features';
 import { useMergedBatch } from '../hooks/useMergedBatch';
 
 function BatchGuard({ children }) {
@@ -38,7 +51,32 @@ export function AppRoutes() {
     <>
       <CameraRouteSync />
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        {SAAS_MODULE_ENABLED ? (
+          <>
+            <Route element={<SaasShellLayout />}>
+              <Route path="/" element={<AssetsDashboardPage />} />
+              <Route path="/assets/:id" element={<SaasAssetDetailPage />} />
+              <Route path="/assets/:id/edit" element={<EditAssetPage />} />
+              <Route path="/assets/:id/analysis/:aid" element={<AnalysisDeepDivePage />} />
+            </Route>
+            <Route path="/assets/create" element={<CreateAssetPage />} />
+          </>
+        ) : (
+          <Route path="/" element={<LandingPage />} />
+        )}
+
+        <Route path="/poc" element={<LandingPage />} />
+
+        <Route path="/assets/create/mobile/:token" element={<MobileAssetCreateLandingPage />} />
+        <Route path="/assets/create/mobile/:token/photos" element={<MobileAssetCreatePhotosPage />} />
+        <Route path="/assets/create/mobile/:token/photos/done" element={<MobileAssetCreatePhotosDonePage />} />
+        <Route path="/assets/create/mobile/:token/photos/capture" element={<MobileAssetCreateCapturePage />} />
+        <Route path="/assets/create/mobile/:token/photos/upload" element={<MobileAssetCreateUploadPage />} />
+        <Route path="/assets/create/mobile/:token/capture" element={<MobileAssetCreateCapturePage />} />
+        <Route path="/assets/create/mobile/:token/upload" element={<MobileAssetCreateUploadPage />} />
+        <Route path="/assets/create/mobile/:token/review" element={<MobileAssetCreateReviewPage />} />
+        <Route path="/assets/create/mobile/:token/done" element={<MobileAssetCreateDonePage />} />
+
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/capture" element={<CapturePage />} />
         <Route path="/upload" element={<UploadPage />} />
@@ -72,7 +110,7 @@ export function AppRoutes() {
             <Route path="/v6/result/:id" element={<V6ResultPage />} />
           </>
         )}
-        {!V6_DEMO_ENABLED && <Route path="/v6/*" element={<Navigate to="/" replace />} />}
+        {!V6_DEMO_ENABLED && <Route path="/v6/*" element={<Navigate to="/poc" replace />} />}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

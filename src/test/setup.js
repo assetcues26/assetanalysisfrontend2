@@ -2,6 +2,12 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeEach, vi } from 'vitest';
 
+vi.mock('../config/features', () => ({
+  V6_DEMO_ENABLED: false,
+  CAPTURE_SESSION_ENABLED: true,
+  SAAS_MODULE_ENABLED: false,
+}));
+
 const STORAGE_KEY = 'assetlens_history';
 
 beforeEach(() => {

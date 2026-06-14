@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { V6_DEMO_ENABLED } from '../../config/features';
+import { V6_DEMO_ENABLED, SAAS_MODULE_ENABLED } from '../../config/features';
 import { BrandLogo } from './BrandLogo';
 import { LandingSettings } from '../landing/LandingSettings';
 
@@ -8,6 +8,8 @@ const navLinks = [
   { to: '/upload', label: 'Upload' },
   { to: '/history', label: 'History' },
 ];
+
+const saasNavLinks = [{ to: '/', label: 'Dashboard' }];
 
 export function AppHeader() {
   const location = useLocation();
@@ -18,7 +20,7 @@ export function AppHeader() {
         <Link
           to="/"
           className="flex max-w-[42%] shrink-0 items-center touch-manipulation sm:max-w-none"
-          aria-label="Home"
+          aria-label={SAAS_MODULE_ENABLED ? 'Asset Register dashboard' : 'Home'}
         >
           <BrandLogo className="h-7 w-auto sm:h-11 md:h-12" />
         </Link>
@@ -27,6 +29,20 @@ export function AppHeader() {
           aria-label="Main navigation"
         >
           <LandingSettings />
+          {SAAS_MODULE_ENABLED &&
+            saasNavLinks.map((link) => (
+              <Link
+                key={link.label}
+                to={link.to}
+                className={`touch-target touch-manipulation shrink-0 rounded-lg px-2.5 py-2 text-xs font-medium transition-all duration-200 sm:px-3 sm:text-sm ${
+                  location.pathname === link.to
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-blue-700 hover:bg-blue-50 hover:text-blue-800'
+                }`}
+              >
+                {link.label}
+              </Link>
+            ))}
           {V6_DEMO_ENABLED && (
             <Link
               to="/v6"
