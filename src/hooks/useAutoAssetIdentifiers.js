@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { applyAutoIdentifiers } from './autoAssetIdentifiers';
+import { applyAutoIdentifiers } from '../utils/autoAssetIdentifiers';
 import { fetchNextAssetIdentifiers } from '../services/saasAssetsApi';
 
 /**

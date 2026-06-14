@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Brain, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { ConfirmModal } from '../ui/Modal';
+import { ConfirmModal } from '../../components/ui/Modal';
 import { useSaasSettings } from '../../context/SaasSettingsContext';
 import { useSaasAssets } from '../../context/SaasAssetsContext';
 import { useApp } from '../../context/AppContext';

@@ -10,7 +10,6 @@ import { useApp } from '../../context/AppContext';
 import { useSaasAssets } from '../../context/SaasAssetsContext';
 import { createSaasAsset, saveWebDraft } from '../../services/saasAssetsApi';
 import { useSaasSettings } from '../../context/SaasSettingsContext';
-import { useSaasAssets } from '../../context/SaasAssetsContext';
 import { AssetCreateQrPanel } from '../../components/saas/AssetCreateQrPanel';
 import { AssetPhotoUploadPanel } from '../../components/saas/AssetPhotoUploadPanel';
 import { CreateAssetModeCards } from '../../components/saas/CreateAssetModeCards';
