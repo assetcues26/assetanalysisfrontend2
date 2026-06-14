@@ -87,12 +87,11 @@
     { "id": "mm-godrej-chair", "name": "Godrej Interio Chair", "subcategoryid": "sub-exec-chair" }
   ],
   "company": [
-    { "id": "1000", "name": "AssetCues Solution Private Limited" },
-    { "id": "2000", "name": "Company 1" },
-    { "id": "3000", "name": "Company 2" },
-    { "id": "4000", "name": "Company 3" },
-    { "id": "5000", "name": "Company 4" },
-    { "id": "6000", "name": "Company 5" },
-    { "id": "7000", "name": "Company 6" }
+    { "id": "1000", "name": "AssetCues Demo Corp" },
+    { "id": "2000", "name": "Demo Company Alpha" },
+    { "id": "3000", "name": "Demo Company Beta" },
+    { "id": "4000", "name": "Demo Company Gamma" },
+    { "id": "5000", "name": "Demo Company Delta" },
+    { "id": "6000", "name": "Demo Company Epsilon" }
   ]
 }

@@ -55,7 +55,7 @@ export const ASSET_FORM_FIELDS = [
   { key: 'makemodelname', label: 'Make/model name', required: true },
   { key: 'companyid', label: 'Company ID', required: true },
   { key: 'company', label: 'Company', required: true },
-  { key: 'customerid', label: 'Customer ID', required: true },
+  { key: 'customerid', label: 'Customer ID', required: true, hint: 'Defaults to company ID' },
   { key: 'assettaggingdetailid', label: 'Asset tagging detail ID', optional: true },
   { key: 'cost', label: 'Cost (INR)', type: 'number', required: true },
   { key: 'acquisitiondate', label: 'Acquisition date (DD-MM-YYYY)', required: true, placeholder: '15-08-2023' },
@@ -91,7 +91,13 @@ export function draftJsonToFormValues(draft) {
 export function mergeFormWithDraft(prev, draft) {
   const fromDraft = draftJsonToFormValues(draft);
   if (Object.keys(fromDraft).length === 0) return prev;
-  return { ...prev, ...fromDraft };
+  const next = { ...prev };
+  for (const [key, value] of Object.entries(fromDraft)) {
+    if (!String(next[key] || '').trim()) {
+      next[key] = value;
+    }
+  }
+  return next;
 }
 
 /**
@@ -216,9 +222,14 @@ export function buildSessionDraft(values, mode) {
  * @param {string} nameKey
  * @param {string} id
  * @param {string} label
+ * @param {Record<string, string>} [currentValues]
  */
-export function buildLookupChangePatch(idKey, nameKey, id, label) {
+export function buildLookupChangePatch(idKey, nameKey, id, label, currentValues = {}) {
   const patch = { [idKey]: id, [nameKey]: label };
+
+  if (idKey === 'companyid' && id && !String(currentValues.customerid || '').trim()) {
+    patch.customerid = id;
+  }
 
   if (idKey === 'assetclassid') {
     Object.assign(patch, {

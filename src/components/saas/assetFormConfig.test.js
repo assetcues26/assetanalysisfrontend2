@@ -5,6 +5,7 @@ import {
   assetFormToPayload,
   draftJsonToFormValues,
   mergeFormWithDraft,
+  buildLookupChangePatch,
   EMPTY_ASSET_FORM,
 } from './assetFormConfig';
 
@@ -90,5 +91,23 @@ describe('assetFormConfig', () => {
     );
     expect(merged.assetname).toBe('Typed on phone');
     expect(merged.tagnumber).toBe('TAG-99');
+  });
+
+  it('buildLookupChangePatch fills customerid from company when customer blank', () => {
+    const patch = buildLookupChangePatch('companyid', 'company', '3000', 'Demo Company Beta', {
+      customerid: '',
+    });
+    expect(patch).toMatchObject({
+      companyid: '3000',
+      company: 'Demo Company Beta',
+      customerid: '3000',
+    });
+  });
+
+  it('buildLookupChangePatch keeps customerid when already set', () => {
+    const patch = buildLookupChangePatch('companyid', 'company', '3000', 'Demo Company Beta', {
+      customerid: 'CUST-99',
+    });
+    expect(patch.customerid).toBeUndefined();
   });
 });

@@ -46,7 +46,7 @@ export function CreateAssetWizard({
   }, [step]);
 
   const applyLookup = (idKey, nameKey, id, label) => {
-    const patch = buildLookupChangePatch(idKey, nameKey, id, label);
+    const patch = buildLookupChangePatch(idKey, nameKey, id, label, values);
     if (onPatch) {
       onPatch(patch);
     } else {

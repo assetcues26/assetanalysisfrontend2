@@ -34,7 +34,7 @@ export function AssetFormFields({
     'mt-1 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700 shadow-sm';
 
   const applyLookup = (idKey, nameKey, id, label) => {
-    const patch = buildLookupChangePatch(idKey, nameKey, id, label);
+    const patch = buildLookupChangePatch(idKey, nameKey, id, label, values);
     if (onPatch) {
       onPatch(patch);
     } else {
