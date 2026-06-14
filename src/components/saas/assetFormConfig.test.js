@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { validateAssetForm, validateWizardStep, assetFormToPayload } from './assetFormConfig';
+import {
+  validateAssetForm,
+  validateWizardStep,
+  assetFormToPayload,
+  draftJsonToFormValues,
+  mergeFormWithDraft,
+  EMPTY_ASSET_FORM,
+} from './assetFormConfig';
 
 describe('assetFormConfig', () => {
   const valid = {
@@ -50,5 +57,25 @@ describe('assetFormConfig', () => {
       assetclassname: 'IT Equipment',
     };
     expect(validateWizardStep(partial, 1)).toMatch(/Make\/model/);
+  });
+
+  it('draftJsonToFormValues ignores empty draft fields and session meta', () => {
+    const values = draftJsonToFormValues({
+      assetname: 'Laptop',
+      tagnumber: '',
+      _session_mode: 'full_mobile',
+      _existing_asset_id: 'abc',
+      not_a_field: 'x',
+    });
+    expect(values).toEqual({ assetname: 'Laptop' });
+  });
+
+  it('mergeFormWithDraft preserves in-progress mobile edits', () => {
+    const merged = mergeFormWithDraft(
+      { ...EMPTY_ASSET_FORM, assetname: 'Typed on phone' },
+      { assetname: '', tagnumber: 'TAG-99', _session_mode: 'full_mobile' },
+    );
+    expect(merged.assetname).toBe('Typed on phone');
+    expect(merged.tagnumber).toBe('TAG-99');
   });
 });

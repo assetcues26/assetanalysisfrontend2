@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Camera, ChevronDown, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
   WIZARD_STEPS,
   assetFormToPayload,
   getSessionMode,
+  mergeFormWithDraft,
   validateAssetForm,
 } from '../../../components/saas/assetFormConfig';
 
@@ -27,15 +28,14 @@ export function MobileAssetCreateLandingPage() {
   const [formError, setFormError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [openSection, setOpenSection] = useState('identity');
+  const draftHydratedRef = useRef(false);
 
   const formSteps = WIZARD_STEPS.filter((s) => s.id !== 'photos' && s.id !== 'review');
 
   useEffect(() => {
-    if (session?.draft_json) {
-      const draft = { ...session.draft_json };
-      delete draft._session_mode;
-      setValues((prev) => ({ ...prev, ...draft }));
-    }
+    if (!session?.draft_json || draftHydratedRef.current) return;
+    draftHydratedRef.current = true;
+    setValues((prev) => mergeFormWithDraft(prev, session.draft_json));
   }, [session?.draft_json]);
 
   useEffect(() => {

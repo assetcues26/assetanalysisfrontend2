@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MobileAssetPageLayout } from '../../../components/saas/mobile/MobileAssetPageLayout';
@@ -7,6 +7,7 @@ import {
   ASSET_FORM_FIELDS,
   EMPTY_ASSET_FORM,
   assetFormToPayload,
+  mergeFormWithDraft,
   validateAssetForm,
 } from '../../../components/saas/assetFormConfig';
 
@@ -17,11 +18,12 @@ export function MobileAssetCreateReviewPage() {
   const [values, setValues] = useState({ ...EMPTY_ASSET_FORM });
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const draftHydratedRef = useRef(false);
 
   useEffect(() => {
-    if (session?.draft_json) {
-      setValues((prev) => ({ ...prev, ...session.draft_json }));
-    }
+    if (!session?.draft_json || draftHydratedRef.current) return;
+    draftHydratedRef.current = true;
+    setValues((prev) => mergeFormWithDraft(prev, session.draft_json));
   }, [session?.draft_json]);
 
   const submit = async (e) => {

@@ -63,6 +63,35 @@ export const EMPTY_ASSET_FORM = Object.fromEntries(
   ASSET_FORM_FIELDS.map((f) => [f.key, '']),
 );
 
+const DRAFT_INTERNAL_KEYS = new Set(['_session_mode', '_existing_asset_id']);
+
+/**
+ * Strip session metadata and keep only non-empty form fields from a QR draft.
+ * @param {Record<string, unknown> | null | undefined} draft
+ */
+export function draftJsonToFormValues(draft) {
+  if (!draft || typeof draft !== 'object') return {};
+  const out = {};
+  for (const [key, value] of Object.entries(draft)) {
+    if (DRAFT_INTERNAL_KEYS.has(key)) continue;
+    if (!(key in EMPTY_ASSET_FORM)) continue;
+    if (value == null || String(value).trim() === '') continue;
+    out[key] = String(value);
+  }
+  return out;
+}
+
+/**
+ * Merge QR draft into form state without wiping in-progress mobile edits.
+ * @param {Record<string, string>} prev
+ * @param {Record<string, unknown> | null | undefined} draft
+ */
+export function mergeFormWithDraft(prev, draft) {
+  const fromDraft = draftJsonToFormValues(draft);
+  if (Object.keys(fromDraft).length === 0) return prev;
+  return { ...prev, ...fromDraft };
+}
+
 /**
  * @param {Record<string, string>} values
  * @param {number} stepIndex
