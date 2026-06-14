@@ -1,46 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Camera, ChevronDown, Upload } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '../../../components/ui/Card';
 import { MobileAssetPageLayout } from '../../../components/saas/mobile/MobileAssetPageLayout';
 import { MobileFormProgress } from '../../../components/saas/mobile/MobileFormProgress';
+import { MobileCreateStepHeader } from '../../../components/saas/mobile/MobileCreateStepHeader';
 import { AssetCuesLogo } from '../../../components/saas/AssetCuesLogo';
 import { AssetFormFields } from '../../../components/saas/AssetFormFields';
 import { SessionExpiryCountdown } from '../../../components/saas/SessionExpiryCountdown';
 import { useAssetCreateSession } from '../../../hooks/useAssetCreateSession';
 import {
   EMPTY_ASSET_FORM,
+  MOBILE_STEP_PHOTOS,
+  SESSION_MODE_FULL_MOBILE,
   SESSION_MODE_IMAGES_ONLY,
   WIZARD_STEPS,
   assetFormToPayload,
+  buildMobileSessionDraft,
+  draftJsonToFormValues,
   getSessionMode,
   mergeFormWithDraft,
   validateWizardStep,
 } from '../../../components/saas/assetFormConfig';
+import { mobileCreateRoutes } from '../../../utils/mobileCreateRoutes';
 
 export function MobileAssetCreateLandingPage() {
   const { token } = useParams();
   const navigate = useNavigate();
-  const { session, loading, error, canUse, complete, uploading, expiresAt } =
-    useAssetCreateSession(token);
+  const { session, loading, error, canUse, saveDraft, expiresAt } = useAssetCreateSession(token);
   const [values, setValues] = useState({ ...EMPTY_ASSET_FORM });
   const [formError, setFormError] = useState(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [openSection, setOpenSection] = useState('identity');
-  const draftHydratedRef = useRef(false);
+  const lastSyncedDraftRef = useRef('');
 
   const formSteps = WIZARD_STEPS.filter((s) => s.id !== 'photos' && s.id !== 'review');
+  const routes = mobileCreateRoutes(token, SESSION_MODE_FULL_MOBILE);
 
   useEffect(() => {
-    if (!session?.draft_json || draftHydratedRef.current) return;
-    draftHydratedRef.current = true;
+    if (!session?.draft_json) return;
+    const sig = JSON.stringify(draftJsonToFormValues(session.draft_json));
+    if (sig === lastSyncedDraftRef.current) return;
+    lastSyncedDraftRef.current = sig;
     setValues((prev) => mergeFormWithDraft(prev, session.draft_json));
   }, [session?.draft_json]);
 
   useEffect(() => {
-    if (session?.draft_json && getSessionMode(session.draft_json) === SESSION_MODE_IMAGES_ONLY) {
-      navigate(`/assets/create/mobile/${token}/photos`, { replace: true });
+    if (!session?.draft_json) return;
+    if (getSessionMode(session.draft_json) === SESSION_MODE_IMAGES_ONLY) {
+      navigate(mobileCreateRoutes(token, SESSION_MODE_IMAGES_ONLY).photos, { replace: true });
     }
   }, [session?.draft_json, navigate, token]);
 
@@ -65,10 +74,7 @@ export function MobileAssetCreateLandingPage() {
     );
   }
 
-  const hasAsset = Boolean(session?.asset_image_url);
-  const base = `/assets/create/mobile/${token}`;
-
-  const submit = async (e) => {
+  const proceedToPhotos = async (e) => {
     e.preventDefault();
     for (const step of formSteps) {
       const stepIndex = WIZARD_STEPS.findIndex((s) => s.id === step.id);
@@ -79,18 +85,17 @@ export function MobileAssetCreateLandingPage() {
         return;
       }
     }
-    if (!hasAsset) {
-      setFormError('Asset image is required — capture or upload a photo first');
-      return;
-    }
     setFormError(null);
-    setSubmitting(true);
+    setSaving(true);
     try {
-      await complete(assetFormToPayload(values));
+      await saveDraft(
+        buildMobileSessionDraft(values, SESSION_MODE_FULL_MOBILE, MOBILE_STEP_PHOTOS),
+      );
+      navigate(routes.photos);
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Failed to create asset');
+      setFormError(err instanceof Error ? err.message : 'Failed to save details');
     } finally {
-      setSubmitting(false);
+      setSaving(false);
     }
   };
 
@@ -98,13 +103,14 @@ export function MobileAssetCreateLandingPage() {
     <MobileAssetPageLayout title="Create asset" wrapperClassName="flex flex-1 flex-col py-6 pb-10">
       <div className="text-center">
         <AssetCuesLogo className="mx-auto" />
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">Fill in asset details</h1>
+        <h1 className="mt-4 text-2xl font-bold text-gray-900">Asset details</h1>
         <p className="mx-auto mt-2 max-w-md text-sm text-gray-600">
-          Complete the form below, then add photos via capture or upload.
+          Fill in the form below. Your answers are saved when you continue to photos.
         </p>
       </div>
 
-      <form onSubmit={submit} className="mx-auto mt-6 flex w-full max-w-lg flex-1 flex-col gap-6">
+      <form onSubmit={proceedToPhotos} className="mx-auto mt-6 flex w-full max-w-lg flex-1 flex-col gap-6">
+        <MobileCreateStepHeader step={1} label="Enter asset information" />
         <MobileFormProgress values={values} />
         <SessionExpiryCountdown expiresAt={expiresAt} />
 
@@ -139,70 +145,14 @@ export function MobileAssetCreateLandingPage() {
           );
         })}
 
-        <div>
-          <h2 className="text-sm font-semibold text-gray-900">Photos</h2>
-          {(session?.asset_image_url || session?.barcode_image_url) && (
-            <div className="mt-3 grid gap-2">
-              {session.asset_image_url && (
-                <img
-                  src={session.asset_image_url}
-                  alt="Asset"
-                  className="h-36 w-full rounded-xl border object-cover"
-                />
-              )}
-              {session.barcode_image_url && (
-                <img
-                  src={session.barcode_image_url}
-                  alt="Barcode"
-                  className="h-24 w-full rounded-xl border object-cover"
-                />
-              )}
-            </div>
-          )}
-
-          <div className="mt-3 grid gap-3">
-            <Card
-              hover
-              onClick={() => navigate(`${base}/capture`)}
-              className="touch-manipulation p-4 active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50 text-blue-600">
-                  <Camera size={20} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Capture photos</h3>
-                  <p className="text-xs text-gray-600">Camera for asset and barcode</p>
-                </div>
-              </div>
-            </Card>
-
-            <Card
-              hover
-              onClick={() => navigate(`${base}/upload`)}
-              className="touch-manipulation p-4 active:scale-[0.99]"
-            >
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                  <Upload size={20} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-gray-900">Upload photos</h3>
-                  <p className="text-xs text-gray-600">Pick from gallery</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-
         {formError && (
           <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
             {formError}
           </p>
         )}
 
-        <Button type="submit" disabled={submitting || uploading} className="mt-auto w-full shadow-lg">
-          {submitting ? 'Creating…' : 'Create Asset'}
+        <Button type="submit" disabled={saving} className="mt-auto w-full shadow-lg">
+          {saving ? 'Saving…' : 'Proceed to add photos'}
         </Button>
       </form>
     </MobileAssetPageLayout>

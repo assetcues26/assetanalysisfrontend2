@@ -211,6 +211,26 @@ export async function fetchAssetCreateSession(token) {
 
 /**
  * @param {string} token
+ * @param {Record<string, unknown>} draftJson
+ */
+export async function saveAssetCreateSessionDraft(token, draftJson) {
+  const response = await fetch(
+    `${SAAS_BASE}/asset-sessions/${encodeURIComponent(token)}/draft`,
+    {
+      method: 'PATCH',
+      headers: { ...saasHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draft_json: draftJson }),
+    },
+  );
+  const body = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(formatApiErrorMessage(body, response.status));
+  }
+  return body;
+}
+
+/**
+ * @param {string} token
  * @param {'assetimage'|'barcodeimage'} fieldName
  * @param {File} file
  */

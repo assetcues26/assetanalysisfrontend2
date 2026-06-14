@@ -1,5 +1,7 @@
 export const SESSION_MODE_IMAGES_ONLY = 'images_only';
 export const SESSION_MODE_FULL_MOBILE = 'full_mobile';
+export const MOBILE_STEP_DETAILS = 'details';
+export const MOBILE_STEP_PHOTOS = 'photos';
 
 export const WIZARD_STEPS = [
   {
@@ -63,7 +65,7 @@ export const EMPTY_ASSET_FORM = Object.fromEntries(
   ASSET_FORM_FIELDS.map((f) => [f.key, '']),
 );
 
-const DRAFT_INTERNAL_KEYS = new Set(['_session_mode', '_existing_asset_id']);
+const DRAFT_INTERNAL_KEYS = new Set(['_session_mode', '_existing_asset_id', '_mobile_step']);
 
 /**
  * Strip session metadata and keep only non-empty form fields from a QR draft.
@@ -205,6 +207,17 @@ export function buildSessionDraft(values, mode) {
   return {
     ...assetFormToPayload(values),
     _session_mode: mode,
+  };
+}
+
+/**
+ * @param {Record<string, string>} values
+ * @param {'images_only' | 'full_mobile'} mode
+ */
+export function buildMobileSessionDraft(values, mode, mobileStep) {
+  return {
+    ...buildSessionDraft(values, mode),
+    _mobile_step: mobileStep,
   };
 }
 

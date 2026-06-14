@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   completeAssetCreateSession,
   fetchAssetCreateSession,
+  saveAssetCreateSessionDraft,
   uploadAssetCreateSessionImage,
 } from '../services/saasAssetsApi';
 
@@ -56,6 +57,17 @@ export function useAssetCreateSession(token) {
     return () => clearInterval(id);
   }, [expiresAt]);
 
+  const saveDraft = useCallback(
+    async (draftJson) => {
+      if (!token) return null;
+      const detail = await saveAssetCreateSessionDraft(token, draftJson);
+      setSession(detail);
+      setError(null);
+      return detail;
+    },
+    [token],
+  );
+
   const uploadImage = useCallback(
     async (fieldName, file) => {
       if (!token || !file) return;
@@ -81,7 +93,9 @@ export function useAssetCreateSession(token) {
     async (metadata) => {
       if (!token) return null;
       const result = await completeAssetCreateSession(token, metadata);
-      navigate(`/assets/create/mobile/${token}/done`);
+      navigate(`/assets/create/mobile/${token}/done`, {
+        state: { aiStatus: result.ai_status },
+      });
       return result;
     },
     [token, navigate],
@@ -101,6 +115,7 @@ export function useAssetCreateSession(token) {
     expiresAt,
     secondsRemaining,
     refresh,
+    saveDraft,
     uploadImage,
     complete,
   };

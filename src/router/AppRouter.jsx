@@ -15,6 +15,7 @@ import { CreateAssetPage } from '../pages/saas/CreateAssetPage';
 import { SaasAssetDetailPage } from '../pages/saas/SaasAssetDetailPage';
 import { EditAssetPage } from '../pages/saas/EditAssetPage';
 import { AnalysisDeepDivePage } from '../pages/saas/AnalysisDeepDivePage';
+import { MobileAssetCreateAddPhotosPage } from '../pages/saas/mobile/MobileAssetCreateAddPhotosPage';
 import { MobileAssetCreateLandingPage } from '../pages/saas/mobile/MobileAssetCreateLandingPage';
 import { MobileAssetCreatePhotosPage } from '../pages/saas/mobile/MobileAssetCreatePhotosPage';
 import { MobileAssetCreatePhotosDonePage } from '../pages/saas/mobile/MobileAssetCreatePhotosDonePage';
@@ -68,6 +69,7 @@ export function AppRoutes() {
         <Route path="/poc" element={<LandingPage />} />
 
         <Route path="/assets/create/mobile/:token" element={<MobileAssetCreateLandingPage />} />
+        <Route path="/assets/create/mobile/:token/add-photos" element={<MobileAssetCreateAddPhotosPage />} />
         <Route path="/assets/create/mobile/:token/photos" element={<MobileAssetCreatePhotosPage />} />
         <Route path="/assets/create/mobile/:token/photos/done" element={<MobileAssetCreatePhotosDonePage />} />
         <Route path="/assets/create/mobile/:token/photos/capture" element={<MobileAssetCreateCapturePage />} />
