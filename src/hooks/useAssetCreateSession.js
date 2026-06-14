@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   completeAssetCreateSession,
@@ -6,8 +6,9 @@ import {
   saveAssetCreateSessionDraft,
   uploadAssetCreateSessionImage,
 } from '../services/saasAssetsApi';
+import { persistMobileCreateSuccess } from '../utils/mobileCreateSuccess';
 
-const POLL_MS = 1000;
+const POLL_MS = 2000;
 
 /**
  * @param {string | undefined} token
@@ -21,6 +22,8 @@ export function useAssetCreateSession(token) {
   const [secondsRemaining, setSecondsRemaining] = useState(null);
 
   const expiresAt = session?.expires_at ?? null;
+  const pollStopped = session?.status === 'completed' || session?.status === 'expired';
+  const pollRef = useRef(null);
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -38,10 +41,15 @@ export function useAssetCreateSession(token) {
   }, [token]);
 
   useEffect(() => {
+    if (!token) return undefined;
     refresh();
-    const id = setInterval(refresh, POLL_MS);
-    return () => clearInterval(id);
-  }, [refresh]);
+    if (pollStopped) return undefined;
+
+    pollRef.current = setInterval(refresh, POLL_MS);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [refresh, token, pollStopped]);
 
   useEffect(() => {
     if (!expiresAt) {
@@ -93,12 +101,20 @@ export function useAssetCreateSession(token) {
     async (metadata) => {
       if (!token) return null;
       const result = await completeAssetCreateSession(token, metadata);
+      const success = {
+        aiStatus: result.ai_status,
+        assetId: result.asset_id,
+        assetTag: result.assetid,
+        assetName: session?.draft_json?.assetname || metadata?.assetname || '',
+      };
+      persistMobileCreateSuccess(token, success);
       navigate(`/assets/create/mobile/${token}/done`, {
-        state: { aiStatus: result.ai_status },
+        replace: true,
+        state: success,
       });
       return result;
     },
-    [token, navigate],
+    [token, navigate, session?.draft_json?.assetname],
   );
 
   const canUse = useMemo(

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { AssetCuesLogo } from '../../../components/saas/AssetCuesLogo';
+import { MobileBrandHeader } from '../../../components/saas/mobile/MobileBrandHeader';
 import { MobileAssetPageLayout } from '../../../components/saas/mobile/MobileAssetPageLayout';
 import { MobileCreateStepHeader } from '../../../components/saas/mobile/MobileCreateStepHeader';
 import {
@@ -73,20 +73,14 @@ export function MobileAssetCreateAddPhotosPage() {
       backLabel="Edit details"
       wrapperClassName="flex flex-1 flex-col gap-6 py-6 pb-10"
     >
-      <div className="text-center">
-        <AssetCuesLogo className="mx-auto" />
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">Add photos</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-gray-600">
-          {assetName ? (
-            <>
-              Details saved for <span className="font-medium text-gray-900">{assetName}</span>.
-              Photos are optional.
-            </>
-          ) : (
-            'Your details are saved. Photos are optional.'
-          )}
-        </p>
-      </div>
+      <MobileBrandHeader
+        title="Add photos"
+        subtitle={
+          assetName
+            ? `Details saved for ${assetName}. Photos are optional.`
+            : 'Your details are saved. Photos are optional.'
+        }
+      />
 
       <MobileCreateStepHeader step={2} label="Capture or upload photos (optional)" />
       <SessionExpiryCountdown expiresAt={expiresAt} />

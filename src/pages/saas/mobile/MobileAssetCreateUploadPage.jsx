@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MobileAssetPageLayout } from '../../../components/saas/mobile/MobileAssetPageLayout';
+import { MobileBrandHeader } from '../../../components/saas/mobile/MobileBrandHeader';
 import { MobilePhotoPreviewGrid } from '../../../components/saas/mobile/MobilePhotoActions';
 import { useAssetCreateSession } from '../../../hooks/useAssetCreateSession';
 import { mobileCreateRoutes, resolveMobileCreateMode } from '../../../utils/mobileCreateRoutes';
@@ -25,9 +26,11 @@ export function MobileAssetCreateUploadPage() {
       onBack={() => navigate(routes.photos)}
       wrapperClassName="flex flex-1 flex-col gap-5 py-6 pb-10"
     >
-      <p className="text-sm text-gray-600">
-        Choose photos from your gallery. Asset and barcode images are both optional.
-      </p>
+      <MobileBrandHeader
+        title="Upload photos"
+        subtitle="Choose photos from your gallery. Asset and barcode images are both optional."
+        className="mb-2"
+      />
 
       <MobilePhotoPreviewGrid
         assetUrl={session?.asset_image_url}

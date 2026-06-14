@@ -6,7 +6,7 @@ import { Card } from '../../../components/ui/Card';
 import { MobileAssetPageLayout } from '../../../components/saas/mobile/MobileAssetPageLayout';
 import { MobileFormProgress } from '../../../components/saas/mobile/MobileFormProgress';
 import { MobileCreateStepHeader } from '../../../components/saas/mobile/MobileCreateStepHeader';
-import { AssetCuesLogo } from '../../../components/saas/AssetCuesLogo';
+import { MobileBrandHeader } from '../../../components/saas/mobile/MobileBrandHeader';
 import { AssetFormFields } from '../../../components/saas/AssetFormFields';
 import { SessionExpiryCountdown } from '../../../components/saas/SessionExpiryCountdown';
 import { useAssetCreateSession } from '../../../hooks/useAssetCreateSession';
@@ -101,13 +101,10 @@ export function MobileAssetCreateLandingPage() {
 
   return (
     <MobileAssetPageLayout title="Create asset" wrapperClassName="flex flex-1 flex-col py-6 pb-10">
-      <div className="text-center">
-        <AssetCuesLogo className="mx-auto" />
-        <h1 className="mt-4 text-2xl font-bold text-gray-900">Asset details</h1>
-        <p className="mx-auto mt-2 max-w-md text-sm text-gray-600">
-          Fill in the form below. Your answers are saved when you continue to photos.
-        </p>
-      </div>
+      <MobileBrandHeader
+        title="Asset details"
+        subtitle="Fill in the form below. Your answers are saved when you continue to photos."
+      />
 
       <form onSubmit={proceedToPhotos} className="mx-auto mt-6 flex w-full max-w-lg flex-1 flex-col gap-6">
         <MobileCreateStepHeader step={1} label="Enter asset information" />
