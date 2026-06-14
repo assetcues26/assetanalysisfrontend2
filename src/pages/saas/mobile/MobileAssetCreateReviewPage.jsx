@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MobileAssetPageLayout } from '../../../components/saas/mobile/MobileAssetPageLayout';
+import { AssetFormFields } from '../../../components/saas/AssetFormFields';
 import { useAssetCreateSession } from '../../../hooks/useAssetCreateSession';
 import {
-  ASSET_FORM_FIELDS,
   EMPTY_ASSET_FORM,
   assetFormToPayload,
   mergeFormWithDraft,
@@ -62,20 +62,12 @@ export function MobileAssetCreateReviewPage() {
           <img src={session.barcode_image_url} alt="Barcode" className="h-24 rounded-xl border object-cover" />
         )}
 
-        {ASSET_FORM_FIELDS.map((field) => (
-          <div key={field.key}>
-            <label className="text-xs font-medium text-gray-700">
-              {field.label}
-              {field.required && ' *'}
-            </label>
-            <input
-              type={field.type || 'text'}
-              value={values[field.key]}
-              onChange={(e) => setValues((p) => ({ ...p, [field.key]: e.target.value }))}
-              className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm shadow-sm"
-            />
-          </div>
-        ))}
+        <AssetFormFields
+          values={values}
+          onChange={(key, val) => setValues((p) => ({ ...p, [key]: val }))}
+          compact
+          hideAssetId
+        />
 
         {(error || sessionError) && (
           <p className="text-sm text-red-600">{error || sessionError}</p>

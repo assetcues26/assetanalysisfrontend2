@@ -27,6 +27,19 @@ describe('assetFormConfig', () => {
     expect(validateAssetForm(valid)).toBeNull();
   });
 
+  it('accepts lookup id without separate name field', () => {
+    const withClassIdOnly = {
+      ...valid,
+      assetclassid: 'CLASS-1',
+      assetclassname: '',
+      makemodelid: 'MK-1',
+      makemodelname: '',
+      companyid: 'COMP-1',
+      company: '',
+    };
+    expect(validateAssetForm(withClassIdOnly)).toBeNull();
+  });
+
   it('rejects bad date format', () => {
     expect(validateAssetForm({ ...valid, acquisitiondate: '2023-08-15' })).toMatch(/DD-MM-YYYY/);
   });

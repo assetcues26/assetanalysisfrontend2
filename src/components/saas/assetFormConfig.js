@@ -94,6 +94,37 @@ export function mergeFormWithDraft(prev, draft) {
 
 /**
  * @param {Record<string, string>} values
+ * @param {{ idKey: string, nameKey: string }} lookup
+ */
+export function isLookupFieldSatisfied(values, lookup) {
+  return Boolean(
+    String(values[lookup.idKey] || '').trim() || String(values[lookup.nameKey] || '').trim(),
+  );
+}
+
+/**
+ * @param {Record<string, string>} values
+ * @param {string} key
+ */
+export function isRequiredFieldSatisfied(values, key) {
+  const field = ASSET_FORM_FIELDS.find((f) => f.key === key);
+  if (!field?.required) return true;
+
+  const lookup = LOOKUP_FIELD_MAP[key];
+  if (lookup) {
+    const nameField = ASSET_FORM_FIELDS.find((f) => f.key === lookup.nameKey);
+    if (nameField?.required) return isLookupFieldSatisfied(values, lookup);
+    return true;
+  }
+
+  const nameLookup = Object.values(LOOKUP_FIELD_MAP).find((item) => item.nameKey === key);
+  if (nameLookup) return isLookupFieldSatisfied(values, nameLookup);
+
+  return Boolean(String(values[key] || '').trim());
+}
+
+/**
+ * @param {Record<string, string>} values
  * @param {number} stepIndex
  */
 export function validateWizardStep(values, stepIndex) {
@@ -103,11 +134,8 @@ export function validateWizardStep(values, stepIndex) {
     const lookup = LOOKUP_FIELD_MAP[key];
     if (lookup) {
       const nameField = ASSET_FORM_FIELDS.find((f) => f.key === lookup.nameKey);
-      if (nameField?.required) {
-        const hasValue =
-          String(values[lookup.idKey] || '').trim() ||
-          String(values[lookup.nameKey] || '').trim();
-        if (!hasValue) return `${nameField.label} is required`;
+      if (nameField?.required && !isLookupFieldSatisfied(values, lookup)) {
+        return `${nameField.label} is required`;
       }
       continue;
     }
@@ -132,7 +160,16 @@ export function validateWizardStep(values, stepIndex) {
  */
 export function validateAssetForm(values) {
   for (const field of ASSET_FORM_FIELDS) {
-    if (field.required && !String(values[field.key] || '').trim()) {
+    if (!field.required) continue;
+    if (LOOKUP_FIELD_MAP[field.key]) continue;
+    if (Object.values(LOOKUP_FIELD_MAP).some((lookup) => lookup.nameKey === field.key)) {
+      const lookup = Object.values(LOOKUP_FIELD_MAP).find((item) => item.nameKey === field.key);
+      if (lookup && !isLookupFieldSatisfied(values, lookup)) {
+        return `${field.label} is required`;
+      }
+      continue;
+    }
+    if (!String(values[field.key] || '').trim()) {
       return `${field.label} is required`;
     }
   }

@@ -16,7 +16,7 @@ import {
   assetFormToPayload,
   getSessionMode,
   mergeFormWithDraft,
-  validateAssetForm,
+  validateWizardStep,
 } from '../../../components/saas/assetFormConfig';
 
 export function MobileAssetCreateLandingPage() {
@@ -70,10 +70,14 @@ export function MobileAssetCreateLandingPage() {
 
   const submit = async (e) => {
     e.preventDefault();
-    const msg = validateAssetForm(values);
-    if (msg) {
-      setFormError(msg);
-      return;
+    for (const step of formSteps) {
+      const stepIndex = WIZARD_STEPS.findIndex((s) => s.id === step.id);
+      const msg = validateWizardStep(values, stepIndex);
+      if (msg) {
+        setFormError(msg);
+        setOpenSection(step.id);
+        return;
+      }
     }
     if (!hasAsset) {
       setFormError('Asset image is required — capture or upload a photo first');
@@ -127,6 +131,7 @@ export function MobileAssetCreateLandingPage() {
                     onChange={(key, val) => setValues((p) => ({ ...p, [key]: val }))}
                     compact
                     fieldKeys={fields}
+                    hideAssetId
                   />
                 </div>
               )}
@@ -190,7 +195,11 @@ export function MobileAssetCreateLandingPage() {
           </div>
         </div>
 
-        {formError && <p className="text-sm text-red-600">{formError}</p>}
+        {formError && (
+          <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+            {formError}
+          </p>
+        )}
 
         <Button type="submit" disabled={submitting || uploading} className="mt-auto w-full shadow-lg">
           {submitting ? 'Creating…' : 'Create Asset'}
