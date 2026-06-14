@@ -75,16 +75,14 @@ export function AddAssetPhotosPanel({ assetId, assetName, onComplete, onAnalyzin
         setSessionAssetUrl(session.asset_image_url);
         setAssetFile(null);
         setAssetPreview(null);
-        showToast('Asset photo synced from phone', 'success');
       }
       if (session.barcode_image_url) {
         setSessionBarcodeUrl(session.barcode_image_url);
         setBarcodeFile(null);
         setBarcodePreview(null);
-        showToast('Barcode photo synced from phone', 'success');
       }
     },
-    [showToast],
+    [],
   );
 
   const hasAssetImage = Boolean(assetFile || sessionAssetUrl);
