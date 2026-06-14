@@ -18,6 +18,7 @@ import {
 } from '../../services/saasAssetsApi';
 import { exportSaasAssetReportPdf } from '../../services/exportSaasAssetReportPdf';
 import { AiStatusBadge, MatchBadge } from '../../components/saas/AiStatusBadge';
+import { AssetThumbnail } from '../../components/saas/AssetThumbnail';
 import { FailureDetailModal } from '../../components/saas/FailureDetailModal';
 import { AnalysisDetailModal } from '../../components/saas/AnalysisDetailModal';
 import { useApp } from '../../context/AppContext';
@@ -316,15 +317,10 @@ export function AssetsDashboardPage() {
                       />
                     </td>
                     <td className="px-3 py-3">
-                      {asset.asset_image_url ? (
-                        <img
-                          src={asset.asset_image_url}
-                          alt=""
-                          className="h-10 w-10 rounded border object-cover"
-                        />
-                      ) : (
-                        <span className="text-gray-300">—</span>
-                      )}
+                      <AssetThumbnail
+                        src={asset.asset_image_url}
+                        alt={asset.assetname || asset.assetid}
+                      />
                     </td>
                     <td className="whitespace-nowrap px-3 py-3 font-medium text-gray-900">
                       <Link to={`/assets/${asset.id}`} className="hover:text-blue-600">

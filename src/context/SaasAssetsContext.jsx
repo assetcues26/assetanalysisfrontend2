@@ -9,6 +9,7 @@ import {
   runSaasAssetAnalysis,
 } from '../services/saasAssetsApi';
 import { isAssetAnalyzing, withAnalyzingState } from '../utils/saasAssetState';
+import { mergePreservingImageUrls } from '../utils/mergeAssetList';
 
 const SaasAssetsContext = createContext(null);
 
@@ -87,7 +88,13 @@ export function SaasAssetsProvider({ children }) {
         sort,
         order,
       });
-      setAssets(body.items || []);
+      setAssets((prev) => {
+        const items = body.items || [];
+        if (silent && prev.length) {
+          return mergePreservingImageUrls(prev, items);
+        }
+        return items;
+      });
       setTotal(body.total ?? 0);
       setError(null);
       setStats((prev) => {
